@@ -54,7 +54,7 @@ function authenticateToken(req, res, next) {
 cron.schedule('5 7 * * *', async () => {
   try {
     console.log('⏰ Running daily ping cron at 7:05 AM EST');
-    await axios.post('http://localhost:5555/cron/daily-pings'); // adjust if deployed
+    await axios.post('/cron/daily-pings'); // adjust if deployed
   } catch (err) {
     console.error('Cron failed:', err.message);
   }
