@@ -68,7 +68,7 @@ app.get('/', (req, res) => {
 app.post('/auth/request-login', async (req, res) => {
   const { email } = req.body;
   const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '15m' });
-  const loginUrl = `https://dailyping.org/auth/verify?token=${token}`;
+  const loginUrl = `/auth/verify?token=${token}`;
   await sendLoginEmail(email, loginUrl);
   res.json({ message: 'Magic login link sent.' });
 });
