@@ -131,23 +131,51 @@ app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
+    console.error('❌ Stripe webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  console.log('✅ Stripe webhook received:', event.type);
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const userId = session.metadata.userId;
+    const userId = session.metadata?.userId;
     const subscriptionId = session.subscription;
+    const customerEmail = session.customer_email;
 
-    await User.findByIdAndUpdate(userId, {
-      pro: true,
-      stripeCustomerId: session.customer,
-      stripeSubscriptionId: subscriptionId
-    });
+    try {
+      let user = null;
+
+      // Try metadata.userId first
+      if (userId) {
+        user = await User.findById(userId);
+      }
+
+      // Fallback to customer_email if userId is missing
+      if (!user && customerEmail) {
+        user = await User.findOne({ email: customerEmail });
+      }
+
+      if (user) {
+        user.pro = true;
+        user.stripeCustomerId = session.customer;
+        user.stripeSubscriptionId = subscriptionId;
+        await user.save();
+        console.log(`✅ Pro status activated for ${user.email}`);
+      } else {
+        console.warn('⚠️ No user found for Stripe session:', {
+          userId,
+          customerEmail
+        });
+      }
+    } catch (err) {
+      console.error('❌ Failed to update user on webhook:', err.message);
+    }
   }
 
   res.json({ received: true });
 });
+
 
 // Create ping manually (for testing)
 app.post('/api/pings', authenticateToken, async (req, res) => {
