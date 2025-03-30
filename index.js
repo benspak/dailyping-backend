@@ -47,7 +47,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Run every day at 7 AM EST
+// Run every day at 7:05 AM EST to prompt for daily response
 cron.schedule('5 7 * * *', async () => {
   try {
     console.log('⏰ Running daily ping cron at 7:05 AM EST');
@@ -63,6 +63,35 @@ cron.schedule('5 7 * * *', async () => {
 app.get('/', (req, res) => {
   res.send('DailyPing API is running');
 });
+
+// Run daily at 7:15 AM EST to sync Pro status
+cron.schedule('15 7 * * *', async () => {
+  console.log('🔁 Running daily Stripe subscription sync...');
+
+  try {
+    const users = await User.find({ stripeSubscriptionId: { $exists: true } });
+
+    for (const user of users) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+
+        if (user.pro !== isActive) {
+          user.pro = isActive;
+          await user.save();
+          console.log(`🔄 Updated ${user.email} → pro: ${isActive}`);
+        }
+      } catch (err) {
+        console.error(`❌ Failed to check subscription for ${user.email}:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Failed to run Stripe sync cron:', err.message);
+  }
+}, {
+  timezone: 'America/New_York'
+});
+
 
 // Auth - Request magic link
 app.post('/auth/request-login', async (req, res) => {
@@ -95,11 +124,29 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // ✅ If user has a Stripe subscription, check live status
+    if (user.stripeSubscriptionId) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        const isActive = sub.status === 'active' || sub.status === 'trialing';
+
+        if (user.pro !== isActive) {
+          user.pro = isActive;
+          await user.save();
+          console.log(`🔄 Pro status synced for ${user.email}: ${isActive}`);
+        }
+      } catch (err) {
+        console.error('⚠️ Stripe subscription lookup failed:', err.message);
+      }
+    }
+
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+
 
 // Billing - Create Stripe checkout session
 app.post('/billing/create-checkout-session', authenticateToken, async (req, res) => {
