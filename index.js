@@ -372,5 +372,3 @@ app.post('/test/sync-pro-status', authenticateToken, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-db.users.updateOne({ email: "benvspak@gmail.com" }, { $set: { isAdmin: true } })
