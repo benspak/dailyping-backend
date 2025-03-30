@@ -17,6 +17,7 @@ const UserSchema = new mongoose.Schema({
     current: { type: Number, default: 0 },
     max: { type: Number, default: 0 },
     lastEntryDate: { type: Date }
-  }
+  },
+  isAdmin: { type: Boolean, default: false }
 });
 module.exports = mongoose.model('User', UserSchema);

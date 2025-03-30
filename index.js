@@ -337,33 +337,38 @@ app.post('/test/send-ping', async (req, res) => {
 });
 
 // Manually trigger Stripe subscription sync
-app.post('/test/sync-pro-status', async (req, res) => {
+app.post('/test/sync-pro-status', authenticateToken, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
     const users = await User.find({ stripeSubscriptionId: { $exists: true } });
     const results = [];
 
-    for (const user of users) {
+    for (const u of users) {
       try {
-        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        const subscription = await stripe.subscriptions.retrieve(u.stripeSubscriptionId);
         const isActive = subscription.status === 'active' || subscription.status === 'trialing';
 
-        if (user.pro !== isActive) {
-          user.pro = isActive;
-          await user.save();
-          console.log(`🔄 Updated ${user.email} → pro: ${isActive}`);
-          results.push({ email: user.email, updatedTo: isActive });
+        if (u.pro !== isActive) {
+          u.pro = isActive;
+          await u.save();
+          console.log(`🔄 Updated ${u.email} → pro: ${isActive}`);
+          results.push({ email: u.email, updatedTo: isActive });
         } else {
-          results.push({ email: user.email, unchanged: isActive });
+          results.push({ email: u.email, unchanged: isActive });
         }
       } catch (err) {
-        console.error(`❌ Stripe lookup failed for ${user.email}:`, err.message);
-        results.push({ email: user.email, error: err.message });
+        console.error(`❌ Stripe lookup failed for ${u.email}:`, err.message);
+        results.push({ email: u.email, error: err.message });
       }
     }
 
     res.json({ status: 'complete', results });
   } catch (err) {
-    console.error('❌ Test sync failed:', err.message);
+    console.error('❌ Admin sync failed:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
