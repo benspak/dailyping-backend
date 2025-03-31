@@ -278,12 +278,24 @@ app.post('/cron/daily-pings', async (req, res) => {
     for (const user of users) {
       const timezone = user.timezone || 'UTC';
       const prefTime = user.preferences?.pingTime || '08:00';
+      const now = DateTime.now().setZone(timezone);
+      const currentUserHHMM = now.toFormat('HH:mm');
 
-      const userNow = DateTime.now().setZone(timezone);
-      const currentUserHHMM = userNow.toFormat('HH:mm');
+      // Only continue if current time matches preferred time
+      if (currentUserHHMM !== prefTime) continue;
 
-      if (currentUserHHMM !== prefTime) {
-        // console.log(`⏱ Skipping ${user.email}: now ${currentUserHHMM}, prefers ${prefTime} (${timezone})`);
+      // Check if user already received a ping today in their timezone
+      const today = now.toISODate();
+      const alreadyPinged = await Ping.findOne({
+        userId: user._id,
+        sentAt: {
+          $gte: DateTime.fromISO(today, { zone: timezone }).startOf('day').toJSDate(),
+          $lte: DateTime.fromISO(today, { zone: timezone }).endOf('day').toJSDate()
+        }
+      });
+
+      if (alreadyPinged) {
+        console.log(`⏱ Already pinged today: ${user.email}`);
         continue;
       }
 
