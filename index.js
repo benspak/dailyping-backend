@@ -450,4 +450,11 @@ app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
   res.status(201).json({ message: 'Subscription saved' });
 });
 
+app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user?.isAdmin) return res.status(403).json({ error: 'Admin only' });
+
+  res.json({ email: user.email, pushSubscription: user.pushSubscription });
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
