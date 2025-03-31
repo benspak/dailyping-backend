@@ -48,9 +48,10 @@ function authenticateToken(req, res, next) {
 
 // Run daily ping cron every minute
 cron.schedule('* * * * *', async () => {
+  console.log("⏰ Running daily ping cron ...")
   try {
+    console.log("⏰ Sending daily ping post request ...")
     await axios.post('https://api.dailyping.org/cron/daily-pings');
-    console.log("⏰ Running daily ping cron ...")
   } catch (err) {
     console.error('⏰ Ping cron failed:', err.message);
   }
