@@ -229,10 +229,10 @@ app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req
 
 app.post('/api/response', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const { content, mode } = req.body;
+  const { content, mode, subtasks } = req.body;
   const todayISO = new Date().toISOString().split('T')[0];
 
-  const response = new Response({ userId, content, mode, date: todayISO, createdAt: new Date(), edited: false });
+  const response = new Response({ userId, content, mode, subtasks: (subtasks || []).slice(0, 3), date: todayISO, createdAt: new Date(), edited: false });
   await response.save();
 
   const user = await User.findById(userId);
