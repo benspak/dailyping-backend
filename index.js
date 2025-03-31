@@ -81,6 +81,18 @@ cron.schedule('15 7 * * *', async () => {
   }
 }, { timezone: 'America/New_York' });
 
+// 🔁 1. Cron Job — Every Sunday @ 8 AM (EST)
+cron.schedule('0 8 * * 0', async () => {
+  try {
+    await axios.post(`${process.env.API_URL || 'http://localhost:5000'}/cron/weekly-summary`);
+  } catch (err) {
+    console.error('❌ Weekly summary cron failed:', err.message);
+  }
+}, {
+  timezone: 'America/New_York'
+});
+
+
 // --- Routes ---
 
 app.get('/', (req, res) => res.send('DailyPing API is running'));
@@ -233,7 +245,7 @@ app.get('/api/responses/today', authenticateToken, async (req, res) => {
 
 app.post('/api/preferences', authenticateToken, async (req, res) => {
   try {
-    const { pingTime, tone, timezone } = req.body;
+    const { pingTime, tone, timezone, weeklySummary } = req.body;
     const user = await User.findById(req.user.id);
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -248,6 +260,7 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
     if (pingTime) user.preferences.pingTime = pingTime;
     if (tone) user.preferences.tone = tone;
     if (timezone) user.timezone = timezone;
+    if (weeklySummary !== undefined) user.preferences.weeklySummary = weeklySummary;
 
     await user.save();
     res.json({ message: 'Preferences updated', preferences: user.preferences, timezone: user.timezone });
@@ -306,5 +319,52 @@ app.post('/cron/daily-pings', async (req, res) => {
     res.status(500).json({ error: 'Cron job failed', details: err.message });
   }
 });
+
+app.post('/cron/weekly-summary', async (req, res) => {
+  const users = await User.find({ pro: true });
+
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const results = [];
+
+  for (const user of users) {
+    try {
+      const responses = await Response.find({
+        userId: user._id,
+        createdAt: { $gte: startOfWeek }
+      }).sort({ date: 1 });
+
+      const content = responses.map(r => `<li><strong>${r.date}</strong>: ${r.content}</li>`).join('');
+
+      const html = `
+        <div style="font-family:sans-serif;padding:1rem;">
+          <h2>Your Weekly Summary</h2>
+          <p>You completed <strong>${responses.length}</strong> days of goals this week.</p>
+          <ul>${content}</ul>
+          <p><strong>Current streak:</strong> ${user.streak?.current ?? 0} 🔥</p>
+          <p>Keep the momentum going!</p>
+        </div>
+      `;
+
+      await resend.emails.send({
+        from: process.env.FROM_EMAIL,
+        to: user.email,
+        subject: 'Your Weekly Ping Summary',
+        html
+      });
+
+      results.push({ email: user.email, success: true });
+    } catch (err) {
+      console.error(`❌ Summary email failed for ${user.email}:`, err.message);
+      results.push({ email: user.email, success: false, error: err.message });
+    }
+  }
+
+  res.json({ status: 'complete', results });
+});
+
 
 app.listen(port, () => console.log(`Server running on port ${port}`));

@@ -17,7 +17,8 @@ const UserSchema = new mongoose.Schema({
     pingTime: { type: String, default: '08:00' },         // HH:MM format
     deliveryMethod: { type: String, default: 'email' },   // email, sms, telegram
     tone: { type: String, default: 'gentle' },             // gentle, motivational, snarky
-    dailyMode: { type: String, default: 'goal' }           // goal, intention, etc.
+    dailyMode: { type: String, default: 'goal' },          // goal, intention, etc.
+    weeklySummary: { type: Boolean, default: true }       // weekly summary email
   },
 
   // Streak tracking
