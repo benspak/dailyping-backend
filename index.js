@@ -237,6 +237,7 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (!user.pro) return res.status(403).json({ error: 'Pro required' });
+    if (timezone) user.timezone = timezone;
 
     const isValidTime = /^([01]\d|2[0-3]):([0-5]\d)$/.test(pingTime);
     if (pingTime && !isValidTime) {
