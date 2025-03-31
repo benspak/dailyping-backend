@@ -46,15 +46,15 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Run daily ping at 7:05 AM EST
+// Run daily ping cron every minute
 cron.schedule('* * * * *', async () => {
   try {
-    await axios.post(`${process.env.API_URL || 'http://localhost:' + port}/cron/daily-pings`);
+    await axios.post('https://api.dailyping.org/cron/daily-pings');
+    console.log("⏰ Running daily ping cron ...")
   } catch (err) {
     console.error('⏰ Ping cron failed:', err.message);
   }
 }, { timezone: 'America/New_York' });
-
 
 // Stripe sync cron at 7:15 AM EST
 cron.schedule('15 7 * * *', async () => {
