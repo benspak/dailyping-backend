@@ -483,9 +483,6 @@ app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
   }
 });
 
-
-
-
 app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user?.isAdmin) return res.status(403).json({ error: 'Admin only' });
