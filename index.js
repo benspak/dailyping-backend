@@ -12,6 +12,7 @@ const { DateTime } = require('luxon');
 const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
+const webpush = require('web-push');
 
 const app = express();
 const port = process.env.PORT || 5555;
@@ -23,6 +24,13 @@ app.use(bodyParser.json());
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error(err));
+
+// Push Notifications
+webpush.setVapidDetails(
+  'mailto:your@email.com',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 // Models
 const User = require('./models/User');
@@ -414,6 +422,24 @@ app.post('/api/feedback', authenticateToken, async (req, res) => {
   }
 });
 
+// Send a push notification manually
+app.post('/test/send-push', authenticateToken, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user?.pushSubscription) {
+    return res.status(400).json({ error: 'No push subscription found' });
+  }
 
+  try {
+    await webpush.sendNotification(user.pushSubscription, JSON.stringify({
+      title: 'DailyPing',
+      body: 'Test notification from your server!'
+    }));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Push send error:', err.message);
+    res.status(500).json({ error: 'Failed to send push notification' });
+  }
+});
 
 app.listen(port, () => console.log(`Server running on port ${port}`));

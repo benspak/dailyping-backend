@@ -24,6 +24,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "resend": "^4.2.0",
-    "stripe": "^17.7.0"
+    "stripe": "^17.7.0",
+    "web-push": "^3.6.7"
   }
 }

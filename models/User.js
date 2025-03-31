@@ -29,7 +29,15 @@ const UserSchema = new mongoose.Schema({
   },
 
   // Admin flag
-  isAdmin: { type: Boolean, default: false }
+  isAdmin: { type: Boolean, default: false },
+
+  pushSubscription: {
+  endpoint: String,
+  keys: {
+    p256dh: String,
+    auth: String
+  }
+},
 });
 
 module.exports = mongoose.model('User', UserSchema);
