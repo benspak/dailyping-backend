@@ -10,6 +10,8 @@ const cron = require('node-cron');
 const axios = require('axios');
 const { DateTime } = require('luxon');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const app = express();
 const port = process.env.PORT || 5555;
@@ -389,27 +391,29 @@ app.post('/api/feedback', authenticateToken, async (req, res) => {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.FEEDBACK_EMAIL_USER,
-        pass: process.env.FEEDBACK_EMAIL_PASS
-      }
-    });
-
-    await transporter.sendMail({
-      from: process.env.FEEDBACK_EMAIL_USER,
+    const result = await resend.emails.send({
+      from: process.env.FROM_EMAIL,
       to: 'benvspak@gmail.com',
       subject: `[DailyPing Feedback] ${subject}`,
-      text: `Feedback from: ${user.email}\\n\\n${feedback}`
+      html: `
+        <div style="font-family: sans-serif; line-height: 1.6;">
+          <h2>New Feedback</h2>
+          <p><strong>From:</strong> ${user.email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong></p>
+          <blockquote>${feedback.replace(/\n/g, '<br>')}</blockquote>
+        </div>
+      `
     });
 
-    res.json({ success: true });
+    console.log('✅ Feedback email sent via Resend');
+    res.json({ success: true, result });
   } catch (err) {
-    console.error('❌ Feedback email error:', err.message);
+    console.error('❌ Resend error:', err.message);
     res.status(500).json({ error: 'Failed to send feedback' });
   }
 });
+
 
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
