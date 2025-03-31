@@ -462,7 +462,7 @@ app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
     const { subscription } = req.body;
 
     // ✅ Add this log here
-    console.log('🔍 Subscription received:', subscription);
+    // console.log('🔍 Subscription received:', subscription);
 
     if (!subscription || !subscription.endpoint || !subscription.keys) {
       console.error('❌ Invalid subscription:', subscription);
@@ -475,7 +475,7 @@ app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
     user.pushSubscription = subscription;
     await user.save();
 
-    console.log('📬 Push subscription saved for', user.email);
+    // console.log('📬 Push subscription saved for', user.email);
     res.json({ success: true });
   } catch (err) {
     console.error('❌ Failed to save push subscription:', err.message);
