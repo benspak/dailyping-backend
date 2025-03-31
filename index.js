@@ -286,6 +286,7 @@ app.post('/cron/daily-pings', async (req, res) => {
       } catch (error) {
         ping.status = 'failed';
         await ping.save();
+        console.error('❌ Failed to send email:', error.message);
         results.push({ email: user.email, sent: false, error: error.message });
       }
     }
