@@ -442,13 +442,16 @@ app.post('/test/send-push', authenticateToken, async (req, res) => {
   }
 });
 
+// ✅ Should exist in your backend (index.js or routes file)
 app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
-  user.pushSubscription = req.body;
+  if (!user) return res.status(404).json({ error: 'User not found' });
 
+  user.pushSubscription = req.body;
   await user.save();
   res.status(201).json({ message: 'Subscription saved' });
 });
+
 
 app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
