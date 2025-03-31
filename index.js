@@ -265,7 +265,19 @@ app.post('/cron/daily-pings', async (req, res) => {
     for (const user of users) {
       const userTime = user.preferences?.pingTime || '08:00';
 
-      if (userTime !== currentHHMM) continue; // skip if not this user's time
+      // if (userTime !== currentHHMM) continue; // skip if not this user's time
+
+      const now = new Date();
+      const currentHH = now.getHours();
+      const currentMM = now.getMinutes();
+
+      const [prefHH, prefMM] = (user.preferences?.pingTime || '08:00').split(':').map(Number);
+
+      // Send only if hour & minute match exactly
+      if (currentHH !== prefHH || currentMM !== prefMM) {
+        console.log(`⏱ Skipping ${user.email}. Pref: ${prefHH}:${prefMM}, Now: ${currentHH}:${currentMM}`);
+        continue;
+      }
 
       const ping = new Ping({
         userId: user._id,
