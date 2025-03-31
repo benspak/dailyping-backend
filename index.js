@@ -432,24 +432,29 @@ app.post('/api/feedback', authenticateToken, async (req, res) => {
 
 // Send a push notification manually
 app.post('/test/send-push', authenticateToken, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  if (!user?.pushSubscription) {
-    return res.status(400).json({ error: 'No push subscription found' });
-  }
-
   try {
+    const user = await User.findById(req.user.id);
+
+    if (!user || !user.pushSubscription || !user.pushSubscription.endpoint) {
+      console.error('❌ No valid push subscription found for user:', user?.email);
+      return res.status(400).json({ error: 'No valid push subscription found.' });
+    }
+
     const payload = JSON.stringify({
       title: 'Test Push',
       body: '👋 Hello from DailyPing! Push is working.'
     });
 
-    await webpush.sendNotification(subscription, payload);
-    res.json({ success: true });
+    await webpush.sendNotification(user.pushSubscription, payload);
+
+    res.json({ success: true, message: 'Test push sent' });
+
   } catch (err) {
     console.error('❌ Push send error:', err.message);
-    res.status(500).json({ error: 'Failed to send push notification' });
+    res.status(500).json({ error: 'Failed to send push notification', details: err.message });
   }
 });
+
 
 // ✅ Should exist in your backend (index.js or routes file)
 app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
