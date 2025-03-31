@@ -233,11 +233,11 @@ app.get('/api/responses/today', authenticateToken, async (req, res) => {
 
 app.post('/api/preferences', authenticateToken, async (req, res) => {
   try {
-    const { pingTime, tone } = req.body;
+    const { pingTime, tone, timezone } = req.body;
     const user = await User.findById(req.user.id);
+
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (!user.pro) return res.status(403).json({ error: 'Pro required' });
-    if (timezone) user.timezone = timezone;
 
     const isValidTime = /^([01]\d|2[0-3]):([0-5]\d)$/.test(pingTime);
     if (pingTime && !isValidTime) {
@@ -247,10 +247,12 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
     if (!user.preferences) user.preferences = {};
     if (pingTime) user.preferences.pingTime = pingTime;
     if (tone) user.preferences.tone = tone;
+    if (timezone) user.timezone = timezone;
 
     await user.save();
-    res.json({ message: 'Preferences updated', preferences: user.preferences });
-  } catch {
+    res.json({ message: 'Preferences updated', preferences: user.preferences, timezone: user.timezone });
+  } catch (err) {
+    console.error('❌ Failed to update preferences:', err.message);
     res.status(500).json({ error: 'Failed to update preferences' });
   }
 });
