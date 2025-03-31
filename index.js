@@ -232,34 +232,52 @@ app.post('/api/response', authenticateToken, async (req, res) => {
   const { content, mode, subTasks = [] } = req.body;
   const todayISO = new Date().toISOString().split('T')[0];
 
-  const response = new Response({
-    userId,
-    content,
-    mode,
-    date: todayISO,
-    createdAt: new Date(),
-    edited: false,
-    subTasks,
-  });
-  await response.save();
-
-  const user = await User.findById(userId);
-  if (user) {
-    const lastDate = user.streak.lastEntryDate?.toISOString().split('T')[0] ?? null;
-    if (lastDate === todayISO) {
-      // no change
-    } else if (lastDate === getYesterdayISO()) {
-      user.streak.current += 1;
-    } else {
-      user.streak.current = 1;
+  try {
+    // Check if a response already exists for today
+    const existing = await Response.findOne({ userId, date: todayISO });
+    if (existing) {
+      return res.status(400).json({ error: 'Response already submitted today.' });
     }
-    user.streak.lastEntryDate = new Date();
-    user.streak.max = Math.max(user.streak.max, user.streak.current);
-    await user.save();
-  }
 
-  res.json(response);
+    const cleanedSubTasks = subTasks.map(t => ({
+      text: t.text?.trim(),
+      checked: false
+    })).filter(t => t.text);
+
+    const response = new Response({
+      userId,
+      content,
+      mode,
+      date: todayISO,
+      subTasks: cleanedSubTasks,
+      createdAt: new Date(),
+      edited: false
+    });
+    await response.save();
+
+    // Update streak
+    const user = await User.findById(userId);
+    if (user) {
+      const lastDate = user.streak.lastEntryDate?.toISOString().split('T')[0];
+      if (lastDate === todayISO) {
+        // do nothing
+      } else if (lastDate === getYesterdayISO()) {
+        user.streak.current += 1;
+      } else {
+        user.streak.current = 1;
+      }
+      user.streak.lastEntryDate = new Date();
+      user.streak.max = Math.max(user.streak.max, user.streak.current);
+      await user.save();
+    }
+
+    res.json(response);
+  } catch (err) {
+    console.error('❌ Error creating response:', err.message);
+    res.status(500).json({ error: 'Failed to submit response' });
+  }
 });
+
 
 // Update existing response
 app.put('/api/response/:id', authenticateToken, async (req, res) => {
