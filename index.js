@@ -265,7 +265,7 @@ app.post('/cron/daily-pings', async (req, res) => {
     for (const user of users) {
       const userTime = user.preferences?.pingTime || '08:00';
 
-      // if (userTime !== currentHHMM) continue; // skip if not this user's time
+      if (userTime !== currentHHMM) continue; // skip if not this user's time
 
       const ping = new Ping({
         userId: user._id,
