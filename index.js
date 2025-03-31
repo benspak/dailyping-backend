@@ -47,14 +47,14 @@ function authenticateToken(req, res, next) {
 }
 
 // Run daily ping at 7:05 AM EST
-cron.schedule('5 7 * * *', async () => {
+cron.schedule('* * * * *', async () => {
   try {
-    console.log('⏰ Running daily ping cron at 7:05 AM EST');
     await axios.post(`${process.env.API_URL || 'http://localhost:' + port}/cron/daily-pings`);
   } catch (err) {
-    console.error('Cron failed:', err.message);
+    console.error('⏰ Ping cron failed:', err.message);
   }
 }, { timezone: 'America/New_York' });
+
 
 // Stripe sync cron at 7:15 AM EST
 cron.schedule('15 7 * * *', async () => {
@@ -251,5 +251,49 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to update preferences' });
   }
 });
+
+app.post('/cron/daily-pings', async (req, res) => {
+  try {
+    const now = new Date();
+    const currentHHMM = now.toTimeString().slice(0, 5); // 'HH:MM'
+    const users = await User.find({});
+
+    const results = [];
+
+    for (const user of users) {
+      const userTime = user.preferences?.pingTime || '08:00';
+
+      if (userTime !== currentHHMM) continue; // skip if not this user's time
+
+      const ping = new Ping({
+        userId: user._id,
+        sentAt: now,
+        deliveryMethod: 'email',
+        status: 'sent'
+      });
+
+      await ping.save();
+
+      try {
+        await sendPingEmail({
+          to: user.email,
+          userName: user.name || '',
+          tone: user.preferences?.tone
+        });
+        results.push({ email: user.email, sent: true });
+      } catch (error) {
+        ping.status = 'failed';
+        await ping.save();
+        results.push({ email: user.email, sent: false, error: error.message });
+      }
+    }
+
+    res.json({ sent: results });
+  } catch (err) {
+    console.error('❌ Cron job failed:', err.message);
+    res.status(500).json({ error: 'Cron job failed', details: err.message });
+  }
+});
+
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
