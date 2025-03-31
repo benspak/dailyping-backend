@@ -253,6 +253,7 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
 });
 
 app.post('/cron/daily-pings', async (req, res) => {
+  console.log('📨 /cron/daily-pings triggered at', new Date().toISOString());
   try {
     const now = new Date();
     const currentHHMM = now.toTimeString().slice(0, 5); // 'HH:MM'
