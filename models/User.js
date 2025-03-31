@@ -31,6 +31,7 @@ const UserSchema = new mongoose.Schema({
   // Admin flag
   isAdmin: { type: Boolean, default: false },
 
+  // Push Notifications
   pushSubscription: {
   endpoint: String,
   keys: {
