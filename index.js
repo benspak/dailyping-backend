@@ -461,7 +461,11 @@ app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
   try {
     const { subscription } = req.body;
 
-    if (!subscription || !subscription.endpoint) {
+    // ✅ Add this log here
+    console.log('🔍 Subscription received:', subscription);
+
+    if (!subscription || !subscription.endpoint || !subscription.keys) {
+      console.error('❌ Invalid subscription:', subscription);
       return res.status(400).json({ error: 'Invalid subscription format' });
     }
 
@@ -478,6 +482,7 @@ app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to save push subscription' });
   }
 });
+
 
 
 
