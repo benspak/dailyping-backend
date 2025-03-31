@@ -8,6 +8,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const bodyParserRaw = require('body-parser');
 const cron = require('node-cron');
 const axios = require('axios');
+const { DateTime } = require('luxon');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -48,9 +49,9 @@ function authenticateToken(req, res, next) {
 
 // Run daily ping cron every minute
 cron.schedule('* * * * *', async () => {
-  console.log("⏰ Running daily ping cron ...")
+  // console.log("⏰ Running daily ping cron ...")
   try {
-    console.log("⏰ Sending daily ping post request ...")
+    // console.log("⏰ Sending daily ping post request ...")
     await axios.post('https://api.dailyping.org/cron/daily-pings');
   } catch (err) {
     console.error('⏰ Ping cron failed:', err.message);
@@ -254,34 +255,25 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
 });
 
 app.post('/cron/daily-pings', async (req, res) => {
-  console.log('📨 /cron/daily-pings triggered at', new Date().toISOString());
   try {
-    const now = new Date();
-    const currentHHMM = now.toTimeString().slice(0, 5); // 'HH:MM'
     const users = await User.find({});
-
     const results = [];
 
     for (const user of users) {
-      const userTime = user.preferences?.pingTime || '08:00';
+      const timezone = user.timezone || 'UTC';
+      const prefTime = user.preferences?.pingTime || '08:00';
 
-      // if (userTime !== currentHHMM) continue; // skip if not this user's time
+      const userNow = DateTime.now().setZone(timezone);
+      const currentUserHHMM = userNow.toFormat('HH:mm');
 
-      const now = new Date();
-      const currentHH = now.getHours();
-      const currentMM = now.getMinutes();
-
-      const [prefHH, prefMM] = (user.preferences?.pingTime || '08:00').split(':').map(Number);
-
-      // Send only if hour & minute match exactly
-      if (currentHH !== prefHH || currentMM !== prefMM) {
-        console.log(`⏱ Skipping ${user.email}. Pref: ${prefHH}:${prefMM}, Now: ${currentHH}:${currentMM}`);
+      if (currentUserHHMM !== prefTime) {
+        // console.log(`⏱ Skipping ${user.email}: now ${currentUserHHMM}, prefers ${prefTime} (${timezone})`);
         continue;
       }
 
       const ping = new Ping({
         userId: user._id,
-        sentAt: now,
+        sentAt: new Date(),
         deliveryMethod: 'email',
         status: 'sent'
       });
@@ -289,17 +281,18 @@ app.post('/cron/daily-pings', async (req, res) => {
       await ping.save();
 
       try {
-        console.log("🚀 Sending email to ...")
         await sendPingEmail({
           to: user.email,
           userName: user.name || '',
           tone: user.preferences?.tone
         });
+
+        console.log(`🚀 Ping sent to ${user.email} at ${currentUserHHMM} (${timezone})`);
         results.push({ email: user.email, sent: true });
       } catch (error) {
         ping.status = 'failed';
         await ping.save();
-        console.error('❌ Failed to send email:', error.message);
+        console.error(`❌ Email failed for ${user.email}:`, error.message);
         results.push({ email: user.email, sent: false, error: error.message });
       }
     }
@@ -310,6 +303,5 @@ app.post('/cron/daily-pings', async (req, res) => {
     res.status(500).json({ error: 'Cron job failed', details: err.message });
   }
 });
-
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
