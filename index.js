@@ -438,11 +438,12 @@ app.post('/test/send-push', authenticateToken, async (req, res) => {
   }
 
   try {
-    await webpush.sendNotification(user.pushSubscription, JSON.stringify({
-      title: 'DailyPing',
-      body: 'Test notification from your server!'
-    }));
+    const payload = JSON.stringify({
+      title: 'Test Push',
+      body: '👋 Hello from DailyPing! Push is working.'
+    });
 
+    await webpush.sendNotification(subscription, payload);
     res.json({ success: true });
   } catch (err) {
     console.error('❌ Push send error:', err.message);
