@@ -9,9 +9,10 @@ const bodyParserRaw = require('body-parser');
 const cron = require('node-cron');
 const axios = require('axios');
 const { DateTime } = require('luxon');
+const nodemailer = require('nodemailer');
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5555;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -376,6 +377,38 @@ app.post('/cron/weekly-summary', async (req, res) => {
   }
 
   res.json({ status: 'complete', results });
+});
+
+// Feedback endpoint
+app.post('/api/feedback', authenticateToken, async (req, res) => {
+  const { subject, feedback } = req.body;
+  const user = await User.findById(req.user.id);
+
+  if (!subject || !feedback) {
+    return res.status(400).json({ error: 'Missing subject or feedback' });
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.FEEDBACK_EMAIL_USER,
+        pass: process.env.FEEDBACK_EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.FEEDBACK_EMAIL_USER,
+      to: 'benvspak@gmail.com',
+      subject: `[DailyPing Feedback] ${subject}`,
+      text: `Feedback from: ${user.email}\\n\\n${feedback}`
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Feedback email error:', err.message);
+    res.status(500).json({ error: 'Failed to send feedback' });
+  }
 });
 
 
