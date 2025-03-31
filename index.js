@@ -137,37 +137,43 @@ app.get('/api/me', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    // ✅ Sync Pro status with Stripe
     if (user.stripeSubscriptionId) {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-        const isActive = ['active', 'trialing'].includes(sub.status);
+        const isActive = sub.status === 'active' || sub.status === 'trialing';
         if (user.pro !== isActive) {
           user.pro = isActive;
           await user.save();
+          console.log(`🔄 Pro status synced for ${user.email}: ${isActive}`);
         }
       } catch (err) {
-        console.error('⚠️ Stripe lookup failed:', err.message);
+        console.error('⚠️ Stripe subscription lookup failed:', err.message);
       }
     }
 
-    // Optional: cleanup legacy field
+    // ✅ Remove legacy "preferences.pro" if present
     if (user.preferences?.pro !== undefined) {
       delete user.preferences.pro;
       await user.save();
     }
 
+    // ✅ Send all necessary fields
     res.json({
       email: user.email,
       streak: user.streak,
       pro: user.pro,
       preferences: user.preferences || {},
       timezone: user.timezone || 'UTC',
-      isAdmin: user.isAdmin || false   // ✅ include this
+      isAdmin: user.isAdmin || false // ✅ Needed for AdminPanel
     });
-  } catch {
+
+  } catch (err) {
+    console.error('❌ Failed to load user:', err.message);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+
 
 app.post('/billing/create-checkout-session', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
