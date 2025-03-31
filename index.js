@@ -36,8 +36,12 @@ webpush.setVapidDetails(
 const User = require('./models/User');
 const Ping = require('./models/Ping');
 const Response = require('./models/Response');
+
+// Utils
 const sendPingEmail = require('./utils/sendPingEmail');
 const sendLoginEmail = require('./utils/sendLoginEmail');
+const sendPushNotification = require("./utils/sendPushNotification");
+const { getPromptByTone } = require('./utils/tonePrompts');
 
 function getYesterdayISO() {
   const d = new Date();
@@ -297,26 +301,16 @@ app.post('/cron/daily-pings', async (req, res) => {
     for (const user of users) {
       const timezone = user.timezone || 'UTC';
       const prefTime = user.preferences?.pingTime || '08:00';
-      const now = DateTime.now().setZone(timezone);
-      const currentUserHHMM = now.toFormat('HH:mm');
+      const tone = user.preferences?.tone || 'gentle';
 
-      // Only continue if current time matches preferred time
-      if (currentUserHHMM !== prefTime) continue;
+      const userNow = DateTime.now().setZone(timezone);
+      const currentUserHHMM = userNow.toFormat('HH:mm');
 
-      // Check if user already received a ping today in their timezone
-      const today = now.toISODate();
-      const alreadyPinged = await Ping.findOne({
-        userId: user._id,
-        sentAt: {
-          $gte: DateTime.fromISO(today, { zone: timezone }).startOf('day').toJSDate(),
-          $lte: DateTime.fromISO(today, { zone: timezone }).endOf('day').toJSDate()
-        }
-      });
-
-      if (alreadyPinged) {
-        console.log(`⏱ Already pinged today: ${user.email}`);
-        continue;
+      if (currentUserHHMM !== prefTime) {
+        continue; // ⏱ Skip if not user's preferred time
       }
+
+      const goalPrompt = getPromptByTone(tone); // Generate tone-specific prompt
 
       const ping = new Ping({
         userId: user._id,
@@ -324,24 +318,41 @@ app.post('/cron/daily-pings', async (req, res) => {
         deliveryMethod: 'email',
         status: 'sent'
       });
-
       await ping.save();
 
+      // ✉️ Send Email
       try {
         await sendPingEmail({
           to: user.email,
           userName: user.name || '',
-          tone: user.preferences?.tone
+          tone: tone,
+          goalPrompt
         });
-
-        console.log(`🚀 Ping sent to ${user.email} at ${currentUserHHMM} (${timezone})`);
-        results.push({ email: user.email, sent: true });
+        console.log(`📧 Email sent to ${user.email}`);
       } catch (error) {
         ping.status = 'failed';
         await ping.save();
         console.error(`❌ Email failed for ${user.email}:`, error.message);
-        results.push({ email: user.email, sent: false, error: error.message });
+        results.push({ user: user.email, email: false, push: false });
+        continue;
       }
+
+      // 🔔 Send Push Notification if available
+      let pushSent = false;
+      if (user.pushSubscription?.endpoint) {
+        try {
+          await sendPushNotification(user.pushSubscription, {
+            title: 'DailyPing',
+            body: goalPrompt
+          });
+          console.log(`📬 Push sent to ${user.email}`);
+          pushSent = true;
+        } catch (pushErr) {
+          console.warn(`⚠️ Push failed for ${user.email}:`, pushErr.message);
+        }
+      }
+
+      results.push({ user: user.email, email: true, push: pushSent });
     }
 
     res.json({ sent: results });
@@ -350,6 +361,7 @@ app.post('/cron/daily-pings', async (req, res) => {
     res.status(500).json({ error: 'Cron job failed', details: err.message });
   }
 });
+
 
 app.post('/cron/weekly-summary', async (req, res) => {
   const users = await User.find({ pro: true });
