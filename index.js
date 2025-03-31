@@ -442,4 +442,12 @@ app.post('/test/send-push', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  user.pushSubscription = req.body;
+
+  await user.save();
+  res.status(201).json({ message: 'Subscription saved' });
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
