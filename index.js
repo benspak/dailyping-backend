@@ -456,15 +456,29 @@ app.post('/test/send-push', authenticateToken, async (req, res) => {
 });
 
 
-// ✅ Should exist in your backend (index.js or routes file)
+// Save user push subscription
 app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  try {
+    const { subscription } = req.body;
 
-  user.pushSubscription = req.body;
-  await user.save();
-  res.status(201).json({ message: 'Subscription saved' });
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: 'Invalid subscription format' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.pushSubscription = subscription;
+    await user.save();
+
+    console.log('📬 Push subscription saved for', user.email);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Failed to save push subscription:', err.message);
+    res.status(500).json({ error: 'Failed to save push subscription' });
+  }
 });
+
 
 
 app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
