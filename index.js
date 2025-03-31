@@ -161,6 +161,8 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       streak: user.streak,
       pro: user.pro,
       preferences: user.preferences || {},
+      timezone: user.timezone || 'UTC',
+      isAdmin: user.isAdmin || false   // ✅ include this
     });
   } catch {
     res.status(500).json({ error: 'Failed to fetch user' });
