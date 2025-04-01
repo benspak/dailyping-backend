@@ -556,30 +556,33 @@ app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
 });
 
 // Toggle completion for a specific sub-task
-app.post('/api/responses/toggle-subtask', authenticateToken, async (req, res) => {
-  const { responseId, index, completed } = req.body;
+  app.post('/api/response/toggle-subtask', authenticateToken, async (req, res) => {
+    const { responseId, index, completed } = req.body;
 
-  try {
-    const response = await Response.findOne({
-      _id: responseId,
-      userId: req.user.id
-    });
-
-    if (!response) return res.status(404).json({ error: 'Response not found' });
-
-    if (!Array.isArray(response.subTasks) || !response.subTasks[index]) {
-      return res.status(400).json({ error: 'Invalid sub-task index' });
+    if (!responseId || typeof index !== 'number') {
+      return res.status(400).json({ error: 'Missing responseId or index' });
     }
 
-    response.subTasks[index].completed = completed;
-    await response.save();
+    try {
+      const response = await Response.findById(responseId);
+      if (!response || response.userId.toString() !== req.user.id) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
 
-    res.json({ success: true, subTasks: response.subTasks });
-  } catch (err) {
-    console.error('❌ Failed to toggle subtask:', err.message);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+      if (!Array.isArray(response.subTasks) || index >= response.subTasks.length) {
+        return res.status(400).json({ error: 'Invalid subtask index' });
+      }
+
+      response.subTasks[index].completed = completed;
+      await response.save();
+
+      res.json({ success: true, updated: response.subTasks[index] });
+    } catch (err) {
+      console.error('❌ Subtask update error:', err.message);
+      res.status(500).json({ error: 'Failed to update subtask' });
+    }
+  });
+
 
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
