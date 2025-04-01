@@ -168,7 +168,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       streak: user.streak,
       pro: user.pro,
       preferences: user.preferences || {},
-      timezone: user.timezone || 'UTC',
+      timezone: user.timezone || 'America/New_York',
       isAdmin: user.isAdmin || false // ✅ Needed for AdminPanel
     });
 
@@ -352,7 +352,7 @@ app.post('/cron/daily-pings', async (req, res) => {
     const results = [];
 
     for (const user of users) {
-      const timezone = user.timezone || 'UTC';
+      const timezone = user.timezone || 'America/New_York';
       const prefTime = user.preferences?.pingTime || '08:00';
       const tone = user.preferences?.tone || 'gentle';
 
