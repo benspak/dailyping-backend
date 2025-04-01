@@ -555,4 +555,31 @@ app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
   res.json({ email: user.email, pushSubscription: user.pushSubscription });
 });
 
+// Toggle completion for a specific sub-task
+app.post('/api/responses/toggle-subtask', authenticateToken, async (req, res) => {
+  const { responseId, index, completed } = req.body;
+
+  try {
+    const response = await Response.findOne({
+      _id: responseId,
+      userId: req.user.id
+    });
+
+    if (!response) return res.status(404).json({ error: 'Response not found' });
+
+    if (!Array.isArray(response.subTasks) || !response.subTasks[index]) {
+      return res.status(400).json({ error: 'Invalid sub-task index' });
+    }
+
+    response.subTasks[index].completed = completed;
+    await response.save();
+
+    res.json({ success: true, subTasks: response.subTasks });
+  } catch (err) {
+    console.error('❌ Failed to toggle subtask:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
