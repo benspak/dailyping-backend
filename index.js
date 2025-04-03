@@ -67,7 +67,15 @@ cron.schedule('* * * * *', async () => {
   // console.log("⏰ Running daily ping cron ...")
   try {
     // console.log("⏰ Sending daily ping post request ...")
-    await axios.post('https://api.dailyping.org/cron/daily-pings');
+    await axios.post(
+      'https://api.dailyping.org/cron/daily-pings',
+      {}, // empty body
+      {
+        headers: {
+          'x-cron-secret': process.env.CRON_SECRET
+        }
+      }
+    );
   } catch (err) {
     console.error('⏰ Ping cron failed:', err.message);
   }
@@ -99,7 +107,15 @@ cron.schedule('15 7 * * *', async () => {
 // 🔁 1. Cron Job — Every Sunday @ 8 AM (EST)
 cron.schedule('0 8 * * 0', async () => {
   try {
-    await axios.post(`${process.env.API_URL || 'http://localhost:5000'}/cron/weekly-summary`);
+    await axios.post(
+      'https://dailyping.org/cron/weekly-summary',
+      {}, // empty body
+      {
+        headers: {
+          'x-cron-secret': process.env.CRON_SECRET
+        }
+      }
+    );
   } catch (err) {
     console.error('❌ Weekly summary cron failed:', err.message);
   }
@@ -347,6 +363,12 @@ app.post('/api/preferences', authenticateToken, async (req, res) => {
 });
 
 app.post('/cron/daily-pings', async (req, res) => {
+  const secret = req.headers['x-cron-secret'];
+  if (secret !== process.env.CRON_SECRET) {
+    console.warn('❌ Invalid CRON secret for /cron/daily-pings');
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   try {
     const users = await User.find({});
     const results = [];
@@ -359,38 +381,25 @@ app.post('/cron/daily-pings', async (req, res) => {
       const userNow = DateTime.now().setZone(timezone);
       const currentUserHHMM = userNow.toFormat('HH:mm');
 
-      if (currentUserHHMM !== prefTime) {
-        continue; // ⏱ Skip if not user's preferred time
-      }
+      if (currentUserHHMM !== prefTime) continue;
 
-      const goalPrompt = getPromptByTone(tone); // Generate tone-specific prompt
+      const goalPrompt = getPromptByTone(tone);
 
-      const ping = new Ping({
-        userId: user._id,
-        sentAt: new Date(),
-        deliveryMethod: 'email',
-        status: 'sent'
-      });
+      const ping = new Ping({ userId: user._id, sentAt: new Date(), deliveryMethod: 'email', status: 'sent' });
       await ping.save();
 
-      // ✉️ Send Email
+      // Email
       try {
-        await sendPingEmail({
-          to: user.email,
-          userName: user.name || '',
-          tone: tone,
-          goalPrompt
-        });
+        await sendPingEmail({ to: user.email, userName: user.name || '', tone, goalPrompt });
         console.log(`📧 Email sent to ${user.email}`);
       } catch (error) {
         ping.status = 'failed';
         await ping.save();
-        console.error(`❌ Email failed for ${user.email}:`, error.message);
         results.push({ user: user.email, email: false, push: false });
         continue;
       }
 
-      // 🔔 Send Push Notification if available
+      // Push
       let pushSent = false;
       if (user.pushSubscription?.endpoint) {
         try {
@@ -415,13 +424,17 @@ app.post('/cron/daily-pings', async (req, res) => {
   }
 });
 
-
 app.post('/cron/weekly-summary', async (req, res) => {
-  const users = await User.find({ pro: true });
+  const secret = req.headers['x-cron-secret'];
+  if (secret !== process.env.CRON_SECRET) {
+    console.warn('❌ Invalid CRON secret for /cron/weekly-summary');
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
+  const users = await User.find({ pro: true });
   const now = new Date();
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+  startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
   const results = [];
