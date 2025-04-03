@@ -523,7 +523,7 @@ app.post('/test/send-push', authenticateToken, async (req, res) => {
       body: '👋 Hello from DailyPing! Push is working.'
     });
 
-    await webpush.sendNotification(user.pushSubscription, payload);
+    await webpush.sendNotification(subscription, JSON.stringify(payload));
 
     res.json({ success: true, message: 'Test push sent' });
 
