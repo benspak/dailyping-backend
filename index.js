@@ -403,6 +403,7 @@ app.post('/cron/daily-pings', async (req, res) => {
       let pushSent = false;
       if (user.pushSubscription?.endpoint) {
         try {
+          console.log('📬 Subscription:', user.pushSubscription);
           await sendPushNotification(user.pushSubscription, {
             title: 'DailyPing',
             body: goalPrompt
@@ -514,19 +515,17 @@ app.post('/test/send-push', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
 
     if (!user || !user.pushSubscription || !user.pushSubscription.endpoint) {
-      console.error('❌ No valid push subscription found for user:', user?.email);
       return res.status(400).json({ error: 'No valid push subscription found.' });
     }
 
-    const payload = JSON.stringify({
+    const payload = {
       title: 'Test Push',
       body: '👋 Hello from DailyPing! Push is working.'
-    });
+    };
 
-    await webpush.sendNotification(subscription, JSON.stringify(payload));
+    await sendPushNotification(user.pushSubscription, payload);
 
     res.json({ success: true, message: 'Test push sent' });
-
   } catch (err) {
     console.error('❌ Push send error:', err.message);
     res.status(500).json({ error: 'Failed to send push notification', details: err.message });
