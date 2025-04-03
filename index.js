@@ -513,24 +513,28 @@ app.post('/api/feedback', authenticateToken, async (req, res) => {
 app.post('/test/send-push', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    const { title, body } = req.body;
 
     if (!user || !user.pushSubscription || !user.pushSubscription.endpoint) {
+      console.error('❌ No valid push subscription found for user:', user?.email);
       return res.status(400).json({ error: 'No valid push subscription found.' });
     }
 
-    const payload = {
-      title: 'Test Push',
-      body: '👋 Hello from DailyPing! Push is working.'
-    };
+    const payload = JSON.stringify({
+      title: title || 'Test Push',
+      body: body || '👋 Hello from DailyPing! Push is working.'
+    });
 
-    await sendPushNotification(user.pushSubscription, payload);
+    await webpush.sendNotification(user.pushSubscription, payload);
 
     res.json({ success: true, message: 'Test push sent' });
+
   } catch (err) {
     console.error('❌ Push send error:', err.message);
     res.status(500).json({ error: 'Failed to send push notification', details: err.message });
   }
 });
+
 
 
 // Save user push subscription
