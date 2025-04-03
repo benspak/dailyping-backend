@@ -1,30 +1,34 @@
 const webpush = require('web-push');
 
+// Set VAPID details for push notifications
 webpush.setVapidDetails(
-  'mailto:your-email@domain.com',
+  'mailto:your@email.com',
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
 
-/**
- * Sends a web push notification to the user's browser
- * @param {Object} subscription - Push subscription object from browser
- * @param {Object} payload - Must include title and body
- */
-async function sendPushNotification(subscription, payload) {
-  try {
-    // Ensure payload is a proper JSON string
-    const message = JSON.stringify({
-      title: payload?.title || 'DailyPing',
-      body: payload?.body || 'You have a new ping!',
-    });
-
-    await webpush.sendNotification(subscription, message);
-    console.log('📬 Push notification sent:', message);
-  } catch (err) {
-    console.error('❌ Failed to send push notification:', err.message);
-    throw err;
+// Match email tone logic
+function getPromptByTone(tone = 'gentle') {
+  switch (tone) {
+    case 'motivational':
+      return "🔥 You’ve got this! What’s one goal for today?";
+    case 'snarky':
+      return "Back again? Let’s make today count — what’s your goal?";
+    case 'gentle':
+    default:
+      return "What’s one meaningful thing you’d like to do today?";
   }
+}
+
+async function sendPushNotification(subscription, { tone = 'gentle', title = 'DailyPing', body = '' } = {}) {
+  const prompt = body || getPromptByTone(tone);
+
+  const payload = JSON.stringify({
+    title,
+    body: prompt
+  });
+
+  return webpush.sendNotification(subscription, payload);
 }
 
 module.exports = sendPushNotification;
