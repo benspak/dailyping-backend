@@ -391,7 +391,7 @@ app.post('/cron/daily-pings', async (req, res) => {
       // Email
       try {
         await sendPingEmail({ to: user.email, userName: user.name || '', tone, goalPrompt });
-        console.log(`📧 Email sent to ${user.email}`);
+        // console.log(`📧 Email sent to ${user.email}`);
       } catch (error) {
         ping.status = 'failed';
         await ping.save();
@@ -403,7 +403,7 @@ app.post('/cron/daily-pings', async (req, res) => {
       let pushSent = false;
       if (user.pushSubscription?.endpoint) {
         try {
-          console.log('📬 Subscription:', user.pushSubscription);
+          // console.log('📬 Subscription:', user.pushSubscription);
           await sendPushNotification(user.pushSubscription, {
             title: 'DailyPing',
             body: goalPrompt
