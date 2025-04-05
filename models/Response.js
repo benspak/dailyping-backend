@@ -13,6 +13,7 @@ const responseSchema = new mongoose.Schema({
   date: { type: String, required: true }, // YYYY-MM-DD
   createdAt: { type: Date, default: Date.now },
   edited: { type: Boolean, default: false },
+  goalCompleted: { type: Boolean, default: false },
   subTasks: [subTaskSchema]
 });
 

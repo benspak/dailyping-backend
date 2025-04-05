@@ -599,6 +599,28 @@ app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
     }
   });
 
+  app.post('/api/response/toggle-goal', authenticateToken, async (req, res) => {
+  const { responseId, completed } = req.body;
+
+  if (!responseId || typeof completed !== 'boolean') {
+    return res.status(400).json({ error: 'Missing or invalid data' });
+  }
+
+  try {
+    const response = await Response.findById(responseId);
+    if (!response || response.userId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    response.goalCompleted = completed;
+    await response.save();
+
+    res.json({ success: true, updated: response });
+  } catch (err) {
+    console.error('❌ Goal completion update error:', err.message);
+    res.status(500).json({ error: 'Failed to update goal completion' });
+  }
+});
 
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
