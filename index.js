@@ -297,17 +297,21 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 
 // Update existing response
 app.put('/api/response/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
   const { content, subTasks } = req.body;
-  const response = await Response.findOne({ _id: req.params.id, userId: req.user.id });
 
-  if (!response) return res.status(404).json({ error: 'Not found' });
+  const response = await Response.findOne({ _id: id, userId: req.user.id });
+  if (!response) return res.status(404).json({ error: 'Response not found' });
 
   response.content = content;
-  response.subTasks = subTasks;
+  response.subTasks = Array.isArray(subTasks)
+    ? subTasks.map(s => ({ text: s.text, completed: false }))
+    : [];
+
   response.edited = true;
   await response.save();
 
-  res.json({ message: 'Updated', response });
+  res.json({ message: 'Response updated', response });
 });
 
 app.get('/api/responses/all', authenticateToken, async (req, res) => {
@@ -318,9 +322,17 @@ app.get('/api/responses/all', authenticateToken, async (req, res) => {
 app.get('/api/responses/today', authenticateToken, async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const existing = await Response.findOne({ userId: req.user.id, date: today });
-  res.json(existing
-    ? { alreadySubmitted: true, content: existing.content }
-    : { alreadySubmitted: false });
+
+  if (existing) {
+    return res.json({
+      alreadySubmitted: true,
+      _id: existing._id, // ✅ Needed for updating later
+      content: existing.content,
+      subTasks: existing.subTasks
+    });
+  } else {
+    return res.json({ alreadySubmitted: false });
+  }
 });
 
 app.post('/api/preferences', authenticateToken, async (req, res) => {
