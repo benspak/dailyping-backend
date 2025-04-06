@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 
 const subTaskSchema = new mongoose.Schema({
   text: { type: String, required: true },
-  completed: { type: Boolean, default: false }
+  completed: { type: Boolean, default: false },
+  reminders: [Date]
 });
 
 const responseSchema = new mongoose.Schema({
@@ -14,7 +15,8 @@ const responseSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   edited: { type: Boolean, default: false },
   goalCompleted: { type: Boolean, default: false },
-  subTasks: [subTaskSchema]
+  subTasks: [subTaskSchema],
+  reminders: [Date],
 });
 
 module.exports = mongoose.model('Response', responseSchema);

@@ -43,6 +43,9 @@ const sendLoginEmail = require('./utils/sendLoginEmail');
 const sendPushNotification = require("./utils/sendPushNotification");
 const { getPromptByTone } = require('./utils/tonePrompts');
 
+// Cron
+const processGoalReminders = require('./cron/process-reminders');
+
 function getYesterdayISO() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
@@ -61,6 +64,13 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
+// Run goal reminders cron every minute
+cron.schedule('* * * * *', async () => {
+  await processGoalReminders();
+}, {
+  timezone: 'America/New_York'
+});
 
 // Run daily ping cron every minute
 cron.schedule('* * * * *', async () => {
