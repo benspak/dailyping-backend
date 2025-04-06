@@ -276,7 +276,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       content,
       mode,
       date: todayISO,
-      reminders: req.body.reminders || [],
+      reminders: reminders || [],
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
       edited: false
