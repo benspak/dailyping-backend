@@ -255,7 +255,7 @@ app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req
 
 app.post('/api/response', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const { content, mode, subTasks = [] } = req.body;
+  const { content, mode, subTasks = [], reminders = [] } = req.body;
   const todayISO = new Date().toISOString().split('T')[0];
 
   try {
@@ -276,7 +276,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       content,
       mode,
       date: todayISO,
-      reminders: reminders || [],
+      reminders: finalReminders,
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
       edited: false
@@ -285,6 +285,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 
     // Update streak
     const user = await User.findById(userId);
+    const finalReminders = user.pro ? reminders : []; // only allow reminders for Pro users
     if (user) {
       const lastDate = user.streak.lastEntryDate?.toISOString().split('T')[0];
       if (lastDate === todayISO) {
@@ -313,10 +314,11 @@ app.put('/api/response/:id', authenticateToken, async (req, res) => {
     const { content, reminders, subTasks } = req.body;
 
     const updated = await Response.findById(req.params.id);
+    const finalReminders = user.pro ? (reminders || []) : [];
     if (!updated) return res.status(404).json({ error: 'Response not found.' });
 
     updated.content = content;
-    updated.reminders = reminders || [];
+    updated.reminders = finalReminders;
     updated.subTasks = (subTasks || []).map(t => ({
       text: t.text?.trim(),
       reminders: t.reminders || [],
