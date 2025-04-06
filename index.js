@@ -297,29 +297,17 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 
 // Update existing response
 app.put('/api/response/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { content, subTasks } = req.body;
+  const { content, subTasks } = req.body;
+  const response = await Response.findOne({ _id: req.params.id, userId: req.user.id });
 
-    const response = await Response.findOne({ _id: id, userId: req.user.id });
+  if (!response) return res.status(404).json({ error: 'Not found' });
 
-    if (!response) {
-      return res.status(404).json({ error: 'Response not found' });
-    }
+  response.content = content;
+  response.subTasks = subTasks;
+  response.edited = true;
+  await response.save();
 
-    response.content = content;
-    response.subTasks = Array.isArray(subTasks)
-      ? subTasks.map((s) => ({ text: s.text, checked: false }))
-      : [];
-
-    response.edited = true;
-    await response.save();
-
-    res.json({ message: 'Response updated', response });
-  } catch (err) {
-    console.error('❌ Failed to update response:', err.message);
-    res.status(500).json({ error: 'Failed to update response' });
-  }
+  res.json({ message: 'Updated', response });
 });
 
 app.get('/api/responses/all', authenticateToken, async (req, res) => {
