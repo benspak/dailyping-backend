@@ -34,11 +34,26 @@ const UserSchema = new mongoose.Schema({
   // Push Notifications
   pushSubscription: {
   endpoint: String,
-  keys: {
-    p256dh: String,
-    auth: String
-  }
-},
+    keys: {
+      p256dh: String,
+      auth: String
+    }
+  },
+
+  // Public profile
+  public: {
+    type: Boolean,
+    default: false
+  },
+
+  // Needed to share goals
+  username: {
+    type: String,
+    unique: true,
+    sparse: true, // in case you don't require it immediately
+    lowercase: true,
+    trim: true
+  },
 });
 
 module.exports = mongoose.model('User', UserSchema);

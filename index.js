@@ -195,7 +195,9 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       pro: user.pro,
       preferences: user.preferences || {},
       timezone: user.timezone || 'America/New_York',
-      isAdmin: user.isAdmin || false // ✅ Needed for AdminPanel
+      isAdmin: user.isAdmin || false, // ✅ Needed for AdminPanel
+      username: user.username || null,
+      needsUsername: !user.username // 👈 Add this
     });
 
   } catch (err) {
@@ -643,5 +645,50 @@ app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
   }
 });
 
+// Set username (once, after login)
+app.post('/api/set-username', authenticateToken, async (req, res) => {
+  const { username } = req.body;
+  const trimmed = (username || '').trim().toLowerCase();
+
+  if (!trimmed || trimmed.length < 3 || trimmed.length > 20 || !/^[a-z0-9_]+$/.test(trimmed)) {
+    return res.status(400).json({ error: 'Username must be 3–20 characters, lowercase letters, numbers or underscores only.' });
+  }
+
+  try {
+    const existing = await User.findOne({ username: trimmed });
+    if (existing) {
+      return res.status(409).json({ error: 'Username is already taken.' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.username) return res.status(403).json({ error: 'Username already set. Cannot change it.' });
+
+    user.username = trimmed;
+    await user.save();
+
+    res.json({ message: '✅ Username set successfully.' });
+  } catch (err) {
+    console.error('❌ Failed to set username:', err.message);
+    res.status(500).json({ error: 'Failed to set username' });
+  }
+});
+
+app.get('/api/public/:username/:date', async (req, res) => {
+  const { username, date } = req.params;
+  const user = await User.findOne({ username });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const response = await Response.findOne({ userId: user._id, date });
+  if (!response) return res.status(404).json({ error: 'No goal found' });
+
+  res.json({
+    username,
+    date,
+    content: response.content,
+    subTasks: response.subTasks,
+    completed: response.goalCompleted,
+  });
+});
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
