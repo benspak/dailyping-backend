@@ -267,6 +267,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 
     const cleanedSubTasks = subTasks.map(t => ({
       text: t.text?.trim(),
+      reminders: t.reminders || [],
       checked: false
     })).filter(t => t.text);
 
@@ -275,6 +276,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       content,
       mode,
       date: todayISO,
+      reminders: req.body.reminders || [],
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
       edited: false
@@ -314,8 +316,13 @@ app.put('/api/response/:id', authenticateToken, async (req, res) => {
   if (!response) return res.status(404).json({ error: 'Response not found' });
 
   response.content = content;
+  response.reminders = reminders || [];
   response.subTasks = Array.isArray(subTasks)
-    ? subTasks.map(s => ({ text: s.text, completed: false }))
+    ? subTasks.map((s) => ({
+        text: s.text,
+        reminders: s.reminders || [],
+        checked: false
+      }))
     : [];
 
   response.edited = true;
