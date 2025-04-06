@@ -44,7 +44,7 @@ const sendPushNotification = require("./utils/sendPushNotification");
 const { getPromptByTone } = require('./utils/tonePrompts');
 
 // Cron
-const processGoalReminders = require('./cron/process-reminders');
+// const processGoalReminders = require('./cron/process-reminders');
 
 function getYesterdayISO() {
   const d = new Date();
