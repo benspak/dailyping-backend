@@ -339,17 +339,15 @@ app.get('/api/responses/all', authenticateToken, async (req, res) => {
 app.get('/api/responses/today', authenticateToken, async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const existing = await Response.findOne({ userId: req.user.id, date: today });
-
-  if (existing) {
-    return res.json({
+  res.json(existing
+  ? {
       alreadySubmitted: true,
-      _id: existing._id, // ✅ Needed for updating later
       content: existing.content,
-      subTasks: existing.subTasks
-    });
-  } else {
-    return res.json({ alreadySubmitted: false });
-  }
+      _id: existing._id,
+      reminders: existing.reminders || [],
+      subTasks: existing.subTasks || []
+    }
+  : { alreadySubmitted: false });
 });
 
 app.post('/api/preferences', authenticateToken, async (req, res) => {
