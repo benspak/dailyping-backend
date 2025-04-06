@@ -309,26 +309,27 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 
 // Update existing response
 app.put('/api/response/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const { content, subTasks } = req.body;
+  try {
+    const { content, reminders, subTasks } = req.body;
 
-  const response = await Response.findOne({ _id: id, userId: req.user.id });
-  if (!response) return res.status(404).json({ error: 'Response not found' });
+    const updated = await Response.findById(req.params.id);
+    if (!updated) return res.status(404).json({ error: 'Response not found.' });
 
-  response.content = content;
-  response.reminders = reminders || [];
-  response.subTasks = Array.isArray(subTasks)
-    ? subTasks.map((s) => ({
-        text: s.text,
-        reminders: s.reminders || [],
-        checked: false
-      }))
-    : [];
+    updated.content = content;
+    updated.reminders = reminders || [];
+    updated.subTasks = (subTasks || []).map(t => ({
+      text: t.text?.trim(),
+      reminders: t.reminders || [],
+      completed: false
+    })).filter(t => t.text);
+    updated.edited = true;
 
-  response.edited = true;
-  await response.save();
-
-  res.json({ message: 'Response updated', response });
+    await updated.save();
+    res.json({ success: true, updated });
+  } catch (err) {
+    console.error('❌ PUT /response/:id error:', err);
+    res.status(500).json({ error: 'Failed to update response.' });
+  }
 });
 
 app.get('/api/responses/all', authenticateToken, async (req, res) => {
