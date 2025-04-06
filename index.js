@@ -259,15 +259,16 @@ app.post('/api/response', authenticateToken, async (req, res) => {
   const todayISO = new Date().toISOString().split('T')[0];
 
   try {
-    // Check if a response already exists for today
     const existing = await Response.findOne({ userId, date: todayISO });
     if (existing) {
       return res.status(400).json({ error: 'Response already submitted today.' });
     }
 
+    const user = await User.findById(userId);
+
     const cleanedSubTasks = subTasks.map(t => ({
       text: t.text?.trim(),
-      reminders: t.reminders || [],
+      reminders: user.pro ? (t.reminders || []) : [],
       checked: false
     })).filter(t => t.text);
 
@@ -276,20 +277,19 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       content,
       mode,
       date: todayISO,
-      reminders: finalReminders,
+      reminders: user.pro ? reminders : [],
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
       edited: false
     });
+
     await response.save();
 
     // Update streak
-    const user = await User.findById(userId);
-    const finalReminders = user.pro ? reminders : []; // only allow reminders for Pro users
     if (user) {
       const lastDate = user.streak.lastEntryDate?.toISOString().split('T')[0];
       if (lastDate === todayISO) {
-        // do nothing
+        // already updated today
       } else if (lastDate === getYesterdayISO()) {
         user.streak.current += 1;
       } else {
@@ -311,19 +311,23 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 // Update existing response
 app.put('/api/response/:id', authenticateToken, async (req, res) => {
   try {
-    const { content, reminders, subTasks } = req.body;
+    const { content, reminders = [], subTasks = [] } = req.body;
 
     const updated = await Response.findById(req.params.id);
-    const finalReminders = user.pro ? (reminders || []) : [];
     if (!updated) return res.status(404).json({ error: 'Response not found.' });
 
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(403).json({ error: 'Unauthorized' });
+
     updated.content = content;
-    updated.reminders = finalReminders;
+    updated.reminders = user.pro ? reminders : [];
+
     updated.subTasks = (subTasks || []).map(t => ({
       text: t.text?.trim(),
-      reminders: t.reminders || [],
+      reminders: user.pro ? (t.reminders || []) : [],
       completed: false
     })).filter(t => t.text);
+
     updated.edited = true;
 
     await updated.save();
