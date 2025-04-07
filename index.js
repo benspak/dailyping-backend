@@ -105,6 +105,13 @@ cron.schedule('15 7 * * *', async () => {
           await user.save();
           console.log(`🔄 Updated ${user.email} → pro: ${isActive}`);
         }
+
+        const isPro = sub.metadata?.isPro === 'true';
+        if (user.pro !== isPro) {
+          user.pro = isPro;
+          await user.save();
+          console.log(`🔄 Updated ${user.email} → pro: ${isPro}`);
+        }
       } catch (err) {
         console.error(`❌ Stripe check failed for ${user.email}:`, err.message);
       }
@@ -245,7 +252,7 @@ app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req
         user.stripeCustomerId = session.customer;
         user.stripeSubscriptionId = session.subscription;
         await user.save();
-        console.log(`✅ Pro activated: ${user.email}`);
+        console.log(`✅ Pro activated: ${user.username}`);
       }
     } catch (err) {
       console.error('❌ Webhook error:', err.message);
