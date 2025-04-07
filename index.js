@@ -691,4 +691,28 @@ app.get('/api/public/:username/:date', async (req, res) => {
   });
 });
 
+// Get public goal by username and date
+app.get('/api/public-goal/:username/:date', async (req, res) => {
+  const { username, date } = req.params;
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const response = await Response.findOne({ userId: user._id, date });
+    if (!response) return res.status(404).json({ error: 'Goal not found for that date' });
+
+    res.json({
+      username: user.username,
+      date: response.date,
+      content: response.content,
+      subTasks: response.subTasks || [],
+      edited: response.edited || false
+    });
+  } catch (err) {
+    console.error('❌ Failed to fetch public goal:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
