@@ -223,12 +223,14 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
     line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
     success_url: `${process.env.FRONTEND_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/billing/cancel`,
-    metadata: { userId: user._id.toString() }
+    metadata: { userId: user._id.toString() },
+    expand: ['subscription'],
   });
   res.json({ url: session.url });
 });
 
 app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req, res) => {
+  console.log('🚨 Webhook endpoint hit');
   const sig = req.headers['stripe-signature'];
   let event;
   try {
@@ -250,8 +252,9 @@ app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req
       if (user) {
         user.pro = true;
         user.stripeCustomerId = session.customer;
-        user.stripeSubscriptionId = session.subscription;
+        user.stripeSubscriptionId = session.subscription?.id || session.subscription;
         await user.save();
+        console.log('📦 Stripe session received:', session);
         console.log(`✅ Pro activated: ${user.username}`);
       }
     } catch (err) {
