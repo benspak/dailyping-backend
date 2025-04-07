@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const bodyParserRaw = require('body-parser');
 const cron = require('node-cron');
 const axios = require('axios');
 const { DateTime } = require('luxon');
@@ -16,6 +15,52 @@ const webpush = require('web-push');
 
 const app = express();
 const port = process.env.PORT || 5555;
+
+// Webhook must be above bodyParser and instances of app.use
+app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+  console.log('🚨 Webhook endpoint hit');
+  // console.log('🧪 typeof req.body:', typeof req.body);
+  // console.log('🧪 instanceof Buffer:', req.body instanceof Buffer);
+  // console.log('🧪 Signature header:', req.headers['stripe-signature']);
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    console.log(event);
+  } catch (err) {
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+      console.log(`📬 Event received: ${event.type}`);
+      console.log('📥 Handling checkout.session.completed');
+      console.log('🧾 Session metadata:', session.metadata);
+      console.log('📧 Session email:', session.customer_email);
+      console.log('🔗 Session subscription:', session.subscription);
+    const userId = session.metadata?.userId;
+    const customerEmail = session.customer_email;
+
+    try {
+      let user = userId
+        ? await User.findById(userId)
+        : await User.findOne({ email: customerEmail });
+
+      if (user) {
+        user.pro = true;
+        user.stripeCustomerId = session.customer;
+        user.stripeSubscriptionId = session.subscription?.id || session.subscription;
+        await user.save();
+        console.log('📦 Stripe session received:', session);
+        console.log(`✅ Pro activated: ${user.username}`);
+      }
+    } catch (err) {
+      console.error('❌ Webhook error:', err.message);
+    }
+  }
+
+  res.json({ received: true });
+});
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -227,42 +272,6 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
     expand: ['subscription'],
   });
   res.json({ url: session.url });
-});
-
-app.post('/webhook', bodyParserRaw.raw({ type: 'application/json' }), async (req, res) => {
-  console.log('🚨 Webhook endpoint hit');
-  const sig = req.headers['stripe-signature'];
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const userId = session.metadata?.userId;
-    const customerEmail = session.customer_email;
-
-    try {
-      let user = userId
-        ? await User.findById(userId)
-        : await User.findOne({ email: customerEmail });
-
-      if (user) {
-        user.pro = true;
-        user.stripeCustomerId = session.customer;
-        user.stripeSubscriptionId = session.subscription?.id || session.subscription;
-        await user.save();
-        console.log('📦 Stripe session received:', session);
-        console.log(`✅ Pro activated: ${user.username}`);
-      }
-    } catch (err) {
-      console.error('❌ Webhook error:', err.message);
-    }
-  }
-
-  res.json({ received: true });
 });
 
 app.post('/api/response', authenticateToken, async (req, res) => {
