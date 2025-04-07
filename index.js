@@ -261,16 +261,36 @@ app.get('/api/me', authenticateToken, async (req, res) => {
 
 app.post('/billing/create-checkout-session', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user.id);
+
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  // Create a Stripe customer if one doesn't exist
+  if (!user.stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email: user.email,
+      metadata: { userId: user._id.toString() }
+    });
+    user.stripeCustomerId = customer.id;
+    await user.save();
+  }
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'subscription',
-    customer_email: user.email,
-    line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+    customer: user.stripeCustomerId,
+    line_items: [
+      {
+        price: process.env.STRIPE_PRICE_ID,
+        quantity: 1
+      }
+    ],
     success_url: `${process.env.FRONTEND_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/billing/cancel`,
-    metadata: { userId: user._id.toString() },
-    expand: ['subscription'],
+    metadata: {
+      userId: user._id.toString()
+    }
   });
+
   res.json({ url: session.url });
 });
 
