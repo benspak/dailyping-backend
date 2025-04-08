@@ -250,6 +250,7 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
       metadata: { userId: user._id.toString() }
     });
     user.stripeCustomerId = customer.id;
+    user.pro = true;
     await user.save();
   }
 
