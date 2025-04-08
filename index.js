@@ -148,17 +148,17 @@ cron.schedule('15 7 * * *', async () => {
         if (user.pro !== isActive) {
           user.pro = isActive;
           await user.save();
-          console.log(`🔄 Updated ${user.email} → pro: ${isActive}`);
+          console.log(`🔄 Updated ${user.username} → pro: ${isActive}`);
         }
 
         const isPro = sub.metadata?.isPro === 'true';
         if (user.pro !== isPro) {
           user.pro = isPro;
           await user.save();
-          console.log(`🔄 Updated ${user.email} → pro: ${isPro}`);
+          console.log(`🔄 Updated ${user.username} → pro: ${isPro}`);
         }
       } catch (err) {
-        console.error(`❌ Stripe check failed for ${user.email}:`, err.message);
+        console.error(`❌ Stripe check failed for ${user.username}:`, err.message);
       }
     }
   } catch (err) {
@@ -218,30 +218,6 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
-
-    // ✅ Sync Pro status with Stripe
-    if (user.stripeSubscriptionId) {
-      try {
-        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-        const isActive = sub.status === 'active' || sub.status === 'trialing';
-
-        // console.log(`Current sub status: ${sub.status}`);
-
-        if (user.pro !== isActive) {
-          user.pro = isActive;
-          await user.save();
-          console.log(`🔄 Pro status synced for ${user.username}: ${user.pro}`);
-        }
-      } catch (err) {
-        console.error('⚠️ Stripe subscription lookup failed:', err.message);
-      }
-    }
-
-    // ✅ Remove legacy "preferences.pro" if present
-    if (user.preferences?.pro !== undefined) {
-      delete user.preferences.pro;
-      await user.save();
-    }
 
     // ✅ Send all necessary fields
     res.json({
