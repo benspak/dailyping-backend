@@ -33,11 +33,11 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-      console.log(`📬 Event received: ${event.type}`);
-      console.log('📥 Handling checkout.session.completed');
-      console.log('🧾 Session metadata:', session.metadata);
-      console.log('📧 Session email:', session.customer_email);
-      console.log('🔗 Session subscription:', session.subscription);
+    // console.log(`📬 Event received: ${event.type}`);
+    // console.log('📥 Handling checkout.session.completed');
+    // console.log('🧾 Session metadata:', session.metadata);
+    // console.log('📧 Session email:', session.customer_email);
+    // console.log('🔗 Session subscription:', session.subscription);
     const userId = session.metadata?.userId;
     const customerEmail = session.customer_email;
 
@@ -51,7 +51,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
         user.stripeCustomerId = session.customer;
         user.stripeSubscriptionId = session.subscription?.id || session.subscription;
         await user.save();
-        console.log('📦 Stripe session received:', session);
+        // console.log('📦 Stripe session received:', session);
         console.log(`✅ Pro activated: ${user.username}`);
       }
     } catch (err) {
@@ -223,14 +223,13 @@ app.get('/api/me', authenticateToken, async (req, res) => {
     if (user.stripeSubscriptionId) {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-        const isActive = sub.status === 'active' || sub.status === 'trialing';
-        if (user.pro !== isActive) {
-          user.pro = isActive;
-          await user.save();
-          console.log(`🔄 Pro status synced for ${user.email}: ${isActive}`);
-        }
+        user.pro = sub.status === 'active' || sub.status === 'trialing';
+        await user.save();
+        console.log(`🔄 Pro status synced for ${user.username}: ${user.pro}`);
       } catch (err) {
         console.error('⚠️ Stripe subscription lookup failed:', err.message);
+        user.pro = false;
+        await user.save();
       }
     }
 
