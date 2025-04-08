@@ -18,7 +18,7 @@ const port = process.env.PORT || 5555;
 
 // Webhook must be above bodyParser and instances of app.use
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
-  console.log('🚨 Webhook endpoint hit');
+  // console.log('🚨 Webhook endpoint hit');
   // console.log('🧪 typeof req.body:', typeof req.body);
   // console.log('🧪 instanceof Buffer:', req.body instanceof Buffer);
   // console.log('🧪 Signature header:', req.headers['stripe-signature']);
@@ -26,7 +26,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    console.log(event);
+    // console.log(event);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
@@ -233,6 +233,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
         if (sub.status === isActive) {
           user.pro = true;
           await user.save();
+          console.log(`🔄 Pro status synced for ${user.username}: ${user.pro}`);
         }
       } catch (err) {
         console.error('⚠️ Stripe subscription lookup failed:', err.message);
