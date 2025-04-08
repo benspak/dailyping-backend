@@ -223,13 +223,19 @@ app.get('/api/me', authenticateToken, async (req, res) => {
     if (user.stripeSubscriptionId) {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-        user.pro = sub.status === 'active' || sub.status === 'trialing';
-        await user.save();
-        console.log(`🔄 Pro status synced for ${user.username}: ${user.pro}`);
+        const isActive = sub.status === 'active' || sub.status === 'trialing';
+
+        if (sub.status !== isActive) {
+          user.pro = false;
+          await user.save();
+          console.log(`🔄 Pro status synced for ${user.username}: ${user.pro}`);
+        }
+        if (sub.status === isActive) {
+          user.pro = true;
+          await user.save();
+        }
       } catch (err) {
         console.error('⚠️ Stripe subscription lookup failed:', err.message);
-        user.pro = false;
-        await user.save();
       }
     }
 
