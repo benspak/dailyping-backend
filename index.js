@@ -224,7 +224,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
         const isActive = sub.status === 'active' || sub.status === 'trialing';
-
+        console.log(`Current sub status: ${sub.status}`)
         if (sub.status !== isActive) {
           user.pro = false;
           await user.save();
