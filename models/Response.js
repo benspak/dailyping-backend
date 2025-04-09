@@ -16,7 +16,10 @@ const ResponseSchema = new mongoose.Schema({
   subTasks: [SubTaskSchema],
   goalCompleted: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
-  edited: { type: Boolean, default: false }
+  edited: { type: Boolean, default: false },
+  note: { type: String, default: '' },
 });
+
+
 
 module.exports = mongoose.model('Response', ResponseSchema);
