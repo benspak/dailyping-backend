@@ -760,6 +760,4 @@ app.get('/public/user/:username', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 app.listen(port, () => console.log(`Server running on port ${port}`));
