@@ -8,7 +8,11 @@ const UserSchema = new mongoose.Schema({
   timezone: { type: String, default: 'America/New_York' },
 
   // Stripe + billing
-  pro: { type: Boolean, default: false },
+  pro: {
+    type: String,
+    default: 'inactive', // instead of `false`
+    enum: ['active', 'inactive', 'canceled', 'trialing'] // optional
+  },
   stripeCustomerId: { type: String },
   stripeSubscriptionId: { type: String },
 

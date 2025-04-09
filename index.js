@@ -47,7 +47,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
         : await User.findOne({ email: customerEmail });
 
       if (user) {
-        user.pro = true;
+        user.pro = 'active';
         user.stripeCustomerId = session.customer;
         user.stripeSubscriptionId = session.subscription?.id || session.subscription;
         await user.save();
@@ -138,18 +138,18 @@ cron.schedule('* * * * *', async () => {
 
 // Stripe sync cron every minute
 cron.schedule('* * * * *', async () => {
-  console.log('🔁 Running daily Stripe subscription sync...');
+  // console.log('🔁 Running Stripe subscription sync...');
   try {
     const users = await User.find({ stripeSubscriptionId: { $exists: true } });
     for (const user of users) {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
 
-        const shouldBePro = sub.status === 'active';
-        if (user.pro !== shouldBePro) {
-          user.pro = shouldBePro;
+        const isPro = sub.status === 'active';
+        if (user.pro !== isPro) {
+          user.pro = isPro;
           await user.save();
-          console.log(`🔄 Updated ${user.username} → pro: ${shouldBePro}`);
+          console.log(`🔄 Updated ${user.username} → pro: ${isPro}`);
         }
 
       } catch (err) {
@@ -245,7 +245,7 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
       metadata: { userId: user._id.toString() }
     });
     user.stripeCustomerId = customer.id;
-    user.pro = true;
+    user.pro = 'active';
     await user.save();
   }
 
@@ -284,7 +284,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
 
     const cleanedSubTasks = subTasks.map(t => ({
       text: t.text?.trim(),
-      reminders: user.pro ? (t.reminders || []) : [],
+      reminders: user.pro === 'active' ? (t.reminders || []) : [],
       checked: false
     })).filter(t => t.text);
 
@@ -293,7 +293,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       content,
       mode,
       date: todayISO,
-      reminders: user.pro ? reminders : [],
+      reminders: user.pro === 'active' ? reminders : [],
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
       edited: false
@@ -336,11 +336,11 @@ app.put('/api/response/:id', authenticateToken, async (req, res) => {
     if (!user) return res.status(403).json({ error: 'Unauthorized' });
 
     updated.content = content;
-    updated.reminders = user.pro ? reminders : [];
+    updated.reminders = user.pro === 'active' ? reminders : [];
 
     updated.subTasks = (subTasks || []).map(t => ({
       text: t.text?.trim(),
-      reminders: user.pro ? (t.reminders || []) : [],
+      reminders: user.pro === 'active' ? (t.reminders || []) : [],
       completed: false
     })).filter(t => t.text);
 

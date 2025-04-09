@@ -1,32 +1,34 @@
-require('dotenv').config();
+// scripts/migrateProField.js
 const mongoose = require('mongoose');
 const User = require('../models/User');
+require('dotenv').config();
 
 (async () => {
   try {
-    console.log('🔍 Connecting with MONGO_URI:', process.env.MONGO_URI);
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ Connected to MongoDB');
 
-    const users = await User.find({ 'preferences.pro': { $exists: true } });
+    const users = await User.find({});
+    let updatedCount = 0;
 
     for (const user of users) {
-      const wasPro = user.preferences?.pro ?? false;
-      user.pro = wasPro;
-
-      // Optional: delete nested value to clean up
-      if (user.preferences) {
-        delete user.preferences.pro;
+      if (user.pro === true) {
+        user.pro = 'active';
+        await user.save();
+        updatedCount++;
+        console.log(`🔄 Updated ${user.username} → pro: 'active'`);
+      } else if (user.pro === false) {
+        user.pro = 'inactive';
+        await user.save();
+        updatedCount++;
+        console.log(`🔄 Updated ${user.username} → pro: 'inactive'`);
       }
-
-      await user.save();
-      console.log(`🔄 Updated ${user.email} → pro: ${wasPro}`);
     }
 
-    console.log(`🎉 Migration complete for ${users.length} user(s)`);
-    mongoose.disconnect();
+    console.log(`✅ Migration complete. ${updatedCount} users updated.`);
+    process.exit();
   } catch (err) {
-    console.error('❌ Migration failed:', err.message);
+    console.error('❌ Migration failed:', err);
     process.exit(1);
   }
 })();
