@@ -136,27 +136,22 @@ cron.schedule('* * * * *', async () => {
   }
 }, { timezone: 'America/New_York' });
 
-// Stripe sync cron at 7:15 AM EST
-cron.schedule('15 7 * * *', async () => {
+// Stripe sync cron every minute
+cron.schedule('* * * * *', async () => {
   console.log('🔁 Running daily Stripe subscription sync...');
   try {
     const users = await User.find({ stripeSubscriptionId: { $exists: true } });
     for (const user of users) {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-        const isActive = ['active', 'trialing'].includes(sub.status);
-        if (user.pro !== isActive) {
-          user.pro = isActive;
+
+        const shouldBePro = sub.status === 'active';
+        if (user.pro !== shouldBePro) {
+          user.pro = shouldBePro;
           await user.save();
-          console.log(`🔄 Updated ${user.username} → pro: ${isActive}`);
+          console.log(`🔄 Updated ${user.username} → pro: ${shouldBePro}`);
         }
 
-        const isPro = sub.metadata?.isPro === 'true';
-        if (user.pro !== isPro) {
-          user.pro = isPro;
-          await user.save();
-          console.log(`🔄 Updated ${user.username} → pro: ${isPro}`);
-        }
       } catch (err) {
         console.error(`❌ Stripe check failed for ${user.username}:`, err.message);
       }
