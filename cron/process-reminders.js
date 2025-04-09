@@ -44,9 +44,9 @@ async function sendGoalReminder(user, text) {
         body: goalPrompt
       });
     }
-    console.log(`✅ Reminder sent to ${user.email}`);
+    console.log(`✅ Reminder sent to ${user.username}`);
   } catch (err) {
-    console.error(`❌ Failed reminder for ${user.email}`, err.message);
+    console.error(`❌ Failed reminder for ${user.username}`, err.message);
   }
 }
 

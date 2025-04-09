@@ -15,7 +15,7 @@ function getPromptByTone(tone = 'gentle') {
 }
 
 async function sendPingEmail({ to, userName, goalPrompt, tone = 'gentle' }) {
-  console.log('🚀 Sending email with tone ', tone);
+  console.log('🚀 Sending email with tone:', tone);
   const prompt = typeof goalPrompt === 'string' ? goalPrompt : getPromptByTone(tone);
 
   const response = await resend.emails.send({
