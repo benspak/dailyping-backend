@@ -145,11 +145,11 @@ cron.schedule('* * * * *', async () => {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
 
-        const isPro = sub.status === 'active';
-        if (user.pro !== isPro) {
-          user.pro = isPro;
+        const newProStatus = sub.status === 'active' ? 'active' : 'inactive';
+        if (user.pro !== newProStatus) {
+          user.pro = newProStatus;
           await user.save();
-          console.log(`🔄 Updated ${user.username} → pro: ${isPro}`);
+          console.log(`🔄 Updated ${user.username} → pro: ${newProStatus}`);
         }
 
       } catch (err) {
