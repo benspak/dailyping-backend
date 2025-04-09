@@ -730,7 +730,7 @@ app.get('/api/public-goal/:username/:date', async (req, res) => {
 });
 
 // GET public user profile and public goals
-router.get('/public/user/:username', async (req, res) => {
+app.get('/public/user/:username', async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username });
 
