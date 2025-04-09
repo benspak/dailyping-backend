@@ -729,4 +729,37 @@ app.get('/api/public-goal/:username/:date', async (req, res) => {
   }
 });
 
+// GET public user profile and public goals
+router.get('/public/user/:username', async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const publicGoals = await Response.find({
+      userId: user._id,
+      isPublic: true
+    }).sort({ date: -1 }).limit(10); // or whatever number you want
+
+    // Only expose safe fields
+    res.json({
+      user: {
+        username: user.username,
+        bio: user.bio || '',
+        streak: user.streak || {},
+        pro: user.pro || 'inactive'
+      },
+      goals: publicGoals
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching public profile:', err.message);
+    res.status(500).json({ error: 'Failed to load public profile' });
+  }
+});
+
+module.exports = router;
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
