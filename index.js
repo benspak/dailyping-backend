@@ -223,6 +223,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       timezone: user.timezone || 'America/New_York',
       isAdmin: user.isAdmin || false, // ✅ Needed for AdminPanel
       username: user.username || null,
+      bio: user.bio, // ✅ This must be included
       needsUsername: !user.username // 👈 Add this
     });
 
