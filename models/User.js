@@ -58,6 +58,9 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+
+  // User details
+  bio: { type: String, default: 'No bio provided.' },
 });
 
 module.exports = mongoose.model('User', UserSchema);

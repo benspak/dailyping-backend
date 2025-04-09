@@ -748,7 +748,7 @@ app.get('/public/user/:username', async (req, res) => {
     res.json({
       user: {
         username: user.username,
-        bio: user.bio || '',
+        bio: user.bio || 'No bio provided.',
         streak: user.streak || {},
         pro: user.pro || 'inactive'
       },
