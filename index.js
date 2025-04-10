@@ -764,20 +764,20 @@ app.get('/public/user/:username', async (req, res) => {
 });
 
 // Get all projects for the logged-in user
-app.get("/api/projects", auth, async (req, res) => {
+app.get("/api/projects", authenticateToken, async (req, res) => {
   const projects = await Project.find({ userId: req.user._id });
   res.json(projects);
 });
 
 // Get a single project by ID
-app.get("/api/projects/:id", auth, async (req, res) => {
+app.get("/api/projects/:id", authenticateToken, async (req, res) => {
   const project = await Project.findOne({ _id: req.params.id, userId: req.user._id });
   if (!project) return res.status(404).json({ message: "Not found" });
   res.json(project);
 });
 
 // Create a new project
-app.post("/api/projects", auth, async (req, res) => {
+app.post("/api/projects", authenticateToken, async (req, res) => {
   const { title, description, goalIds } = req.body;
   const project = new Project({
     userId: req.user._id,
@@ -790,7 +790,7 @@ app.post("/api/projects", auth, async (req, res) => {
 });
 
 // Update an existing project
-app.put("/api/projects/:id", auth, async (req, res) => {
+app.put("/api/projects/:id", authenticateToken, async (req, res) => {
   const { title, description, goalIds } = req.body;
   const project = await Project.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
