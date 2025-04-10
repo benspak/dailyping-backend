@@ -62,6 +62,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
   res.json({ received: true });
 });
 
+app.use(express.json()); // make sure this exists at the top of your backend
 
 const allowedOrigins = ['https://dailyping.org'];
 
