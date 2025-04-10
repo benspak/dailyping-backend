@@ -62,7 +62,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
   res.json({ received: true });
 });
 
-app.use(cors());
+app.use(cors({origin: "https://dailyping.org"}));
 app.use(bodyParser.json());
 
 // MongoDB connection
@@ -778,6 +778,7 @@ app.get("/api/projects/:id", authenticateToken, async (req, res) => {
 
 // Create a new project
 app.post("/api/projects", authenticateToken, async (req, res) => {
+  console.log("POST /api/projects hit!", req.body);
   const { title, description, goalIds } = req.body;
   const project = new Project({
     userId: req.user._id,
