@@ -714,6 +714,7 @@ app.get('/api/public-goal/:username/:date', async (req, res) => {
     const user = await User.findOne({ username });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    // Date YYYY-MM-DD
     const response = await Response.findOne({ userId: user._id, date });
     if (!response) return res.status(404).json({ error: 'Goal not found for that date' });
 
