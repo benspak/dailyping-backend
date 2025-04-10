@@ -81,6 +81,7 @@ webpush.setVapidDetails(
 const User = require('./models/User');
 const Ping = require('./models/Ping');
 const Response = require('./models/Response');
+const Project = require('./models/Project.js');
 
 // Utils
 const sendPingEmail = require('./utils/sendPingEmail');
@@ -760,6 +761,44 @@ app.get('/public/user/:username', async (req, res) => {
     console.error('❌ Error fetching public profile:', err.message);
     res.status(500).json({ error: 'Failed to load public profile' });
   }
+});
+
+// Get all projects for the logged-in user
+app.get("/api/projects", auth, async (req, res) => {
+  const projects = await Project.find({ userId: req.user._id });
+  res.json(projects);
+});
+
+// Get a single project by ID
+app.get("/api/projects/:id", auth, async (req, res) => {
+  const project = await Project.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!project) return res.status(404).json({ message: "Not found" });
+  res.json(project);
+});
+
+// Create a new project
+app.post("/api/projects", auth, async (req, res) => {
+  const { title, description, goalIds } = req.body;
+  const project = new Project({
+    userId: req.user._id,
+    title,
+    description,
+    goalIds
+  });
+  await project.save();
+  res.status(201).json(project);
+});
+
+// Update an existing project
+app.put("/api/projects/:id", auth, async (req, res) => {
+  const { title, description, goalIds } = req.body;
+  const project = await Project.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user._id },
+    { title, description, goalIds },
+    { new: true }
+  );
+  if (!project) return res.status(404).json({ message: "Not found" });
+  res.json(project);
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
