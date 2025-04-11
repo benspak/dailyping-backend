@@ -822,4 +822,10 @@ app.put("/api/projects/:id", authenticateToken, async (req, res) => {
   res.json(project);
 });
 
+app.get("/api/responses/:id", auth, async (req, res) => {
+  const goal = await Response.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!goal) return res.status(404).json({ message: "Not found" });
+  res.json(goal);
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
