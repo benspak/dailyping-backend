@@ -828,4 +828,17 @@ app.get("/api/responses/:id", authenticateToken, async (req, res) => {
   res.json(goal);
 });
 
+// Queue Routes
+app.get("/api/queue", auth, async (req, res) => {
+  const items = await QueueItem.find({ userId: req.user._id });
+  res.json(items);
+});
+
+app.post("/api/queue", auth, async (req, res) => {
+  const { title, notes } = req.body;
+  const item = new QueueItem({ userId: req.user._id, title, notes });
+  await item.save();
+  res.status(201).json(item);
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
