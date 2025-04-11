@@ -237,6 +237,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
 
     // ✅ Send all necessary fields
     res.json({
+      userId: user._id,
       email: user.email,
       streak: user.streak,
       pro: user.pro,
