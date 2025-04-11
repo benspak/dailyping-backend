@@ -101,6 +101,7 @@ const User = require('./models/User');
 const Ping = require('./models/Ping');
 const Response = require('./models/Response');
 const Project = require('./models/Project.js');
+const Queue = require('./models/Queue.js');
 
 // Utils
 const sendPingEmail = require('./utils/sendPingEmail');
