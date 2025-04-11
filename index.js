@@ -823,7 +823,7 @@ app.put("/api/projects/:id", authenticateToken, async (req, res) => {
 });
 
 app.get("/api/responses/:id", authenticateToken, async (req, res) => {
-  const goal = await Response.findOne({ _id: req.params.id, userId: req.user._id });
+  const goal = await Response.findOne({ _id: req.params.id });
   if (!goal) return res.status(404).json({ message: "Not found" });
   res.json(goal);
 });
