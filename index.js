@@ -839,9 +839,21 @@ app.get("/api/queue", authenticateToken, async (req, res) => {
 
 app.post("/api/queue", authenticateToken, async (req, res) => {
   const { title, notes } = req.body;
-  const item = new QueueItem({ userId: req.user._id, title, notes });
-  await item.save();
-  res.status(201).json(item);
+  console.log("Authenticated user:", req.user);
+  console.log("Body received:", req.body);
+  const item = new QueueItem({
+    userId: req.userId,      // ✅ This must be explicitly set
+    title,
+    notes
+  });
+
+  try {
+    await item.save();
+    res.status(201).json(item);
+  } catch (err) {
+    console.error("Queue creation failed:", err);
+    res.status(500).json({ error: "Failed to create queue item" });
+  }
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
