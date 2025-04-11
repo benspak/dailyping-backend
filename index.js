@@ -389,7 +389,8 @@ app.get('/api/responses/today', authenticateToken, async (req, res) => {
       content: existing.content,
       _id: existing._id,
       reminders: existing.reminders || [],
-      subTasks: existing.subTasks || []
+      subTasks: existing.subTasks || [],
+      note: existing.note
     }
   : { alreadySubmitted: false });
 });
