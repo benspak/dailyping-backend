@@ -794,12 +794,13 @@ app.get("/api/projects/:id", authenticateToken, async (req, res) => {
 // Create a new project
 app.post("/api/projects", authenticateToken, async (req, res) => {
   console.log("POST /api/projects hit!", req.body);
-  const { title, description, goalIds } = req.body;
+  const { title, description, goalIds, users } = req.body;
   const project = new Project({
     userId: req.user._id,
     title,
     description,
-    goalIds
+    goalIds,
+    users
   });
   await project.save();
   res.status(201).json(project);
