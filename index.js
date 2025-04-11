@@ -808,10 +808,10 @@ app.post("/api/projects", authenticateToken, async (req, res) => {
 
 // Update an existing project
 app.put("/api/projects/:id", authenticateToken, async (req, res) => {
-  const { title, description, goalIds } = req.body;
+  const { title, description, goalIds, users } = req.body;
   const project = await Project.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
-    { title, description, goalIds },
+    { title, description, goalIds, users },
     { new: true }
   );
   if (!project) return res.status(404).json({ message: "Not found" });
