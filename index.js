@@ -838,6 +838,8 @@ app.get("/api/queue", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/queue", authenticateToken, async (req, res) => {
+  console.log("Received POST /queue:", { title, notes });
+  console.log("req.user:", req.user);
   const { title, notes } = req.body;
   console.log("Authenticated user:", req.user);
   console.log("Body received:", req.body);
