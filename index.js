@@ -840,9 +840,9 @@ app.get("/api/queue", authenticateToken, async (req, res) => {
 app.post("/api/queue", authenticateToken, async (req, res) => {
   const { title, note } = req.body;
   const item = new QueueItem({
-    userId: req.userId,
+    userId: req.user.id,
     title,
-    note
+    notes: note
   });
 
   console.log("Authenticated user:", req.user);
