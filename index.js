@@ -348,6 +348,7 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
 });
 
 
+
 // Update existing goal
 app.put('/api/goal/:id', authenticateToken, async (req, res) => {
   try {
@@ -831,6 +832,20 @@ app.get("/api/goal/:id", authenticateToken, async (req, res) => {
   const goal = await Goal.findOne({ _id: req.params.id });
   if (!goal) return res.status(404).json({ message: "Not found" });
   res.json(goal);
+});
+
+app.delete('/api/goal/:id', authenticateToken, async (req, res) => {
+  try {
+    const goal = await Goal.findById(req.params.id);
+    if (!goal || goal.userId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    await goal.deleteOne();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Failed to delete goal:', err.message);
+    res.status(500).json({ error: 'Failed to delete goal' });
+  }
 });
 
 // Backlog Routes
