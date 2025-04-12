@@ -378,7 +378,7 @@ app.put('/api/goal/:id', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/goals/all', authenticateToken, async (req, res) => {
-  const goals = await goal.find({ userId: req.user.id }).sort({ date: -1 });
+  const goals = await Goal.find({ userId: req.user.id }).sort({ date: -1 });
   res.json(goals);
 });
 
