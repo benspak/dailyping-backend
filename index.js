@@ -515,7 +515,7 @@ app.post('/cron/weekly-summary', async (req, res) => {
           <h2>Your Weekly Summary</h2>
           <p>You completed <strong>${responses.length}</strong> days of goals this week.</p>
           <ul>${content}</ul>
-          <p><strong>Current streak:</strong> ${user.streak?.current ?? 0} 🔥</p>
+          <p><strong>Goal streak:</strong> ${user.streak?.current ?? 0} 🔥</p>
           <p>Keep the momentum going!</p>
         </div>
       `;
@@ -838,11 +838,12 @@ app.get("/api/queue", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/queue", authenticateToken, async (req, res) => {
-  const { title, note } = req.body;
+  const { title, note, dueDate } = req.body;
   const item = new QueueItem({
     userId: req.user.id,
     title,
-    note
+    note,
+    dueDate
   });
 
   //console.log("Authenticated user:", req.user);
