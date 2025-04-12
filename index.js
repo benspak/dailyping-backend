@@ -825,7 +825,7 @@ app.put("/api/projects/:id", authenticateToken, async (req, res) => {
   res.json(project);
 });
 
-app.get("/api/goals/:id", authenticateToken, async (req, res) => {
+app.get("/api/goal/:id", authenticateToken, async (req, res) => {
   const goal = await Goal.findOne({ _id: req.params.id });
   if (!goal) return res.status(404).json({ message: "Not found" });
   res.json(goal);
