@@ -294,7 +294,7 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
 
 app.post('/api/goal', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const { content, mode, subTasks = [], reminders = [], note, dueDate } = req.body;
+  const { content, mode, subTasks = [], reminders = [], note, date } = req.body;
   const todayISO = new Date().toISOString().split('T')[0];
 
   try {
@@ -316,7 +316,7 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
       content,
       mode,
       date: todayISO,
-      dueDate,
+      date,
       reminders: user.pro === 'active' ? reminders : [],
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
@@ -353,7 +353,7 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
 // Update existing goal
 app.put('/api/goal/:id', authenticateToken, async (req, res) => {
   try {
-    const { content, reminders = [], subTasks = [], note, dueDate } = req.body;
+    const { content, reminders = [], subTasks = [], note, date } = req.body;
 
     const updated = await Goal.findById(req.params.id);
     if (!updated) return res.status(404).json({ error: 'Goal not found.' });
@@ -371,7 +371,7 @@ app.put('/api/goal/:id', authenticateToken, async (req, res) => {
     })).filter(t => t.text);
 
     updated.edited = true;
-    updated.dueDate = dueDate;
+    updated.date = date;
     updated.note = note;
 
     await updated.save();
@@ -857,17 +857,17 @@ app.get("/api/backlog", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/backlog", authenticateToken, async (req, res) => {
-  const { title, note, dueDate } = req.body;
+  const { title, note, date } = req.body;
   const item = new Backlog({
     userId: req.user.id,
     title,
     note,
-    dueDate
+    date
   });
 
   //console.log("Authenticated user:", req.user);
   //console.log("Body received:", req.body);
-  // console.log("Received POST /backlog:", { title, note, dueDate });
+  // console.log("Received POST /backlog:", { title, note, date });
   //console.log("req.user:", req.user);
 
   try {

@@ -7,7 +7,7 @@ const backlogSchema = new Schema({
   note: { type: String },
   createdAt: { type: Date, default: Date.now },
   convertedToGoal: { type: Boolean, default: false },
-  dueDate: { type: Date }
+  date: { type: Date }
 });
 
 module.exports = mongoose.model("Backlog", backlogSchema);
