@@ -833,7 +833,7 @@ app.get("/api/responses/:id", authenticateToken, async (req, res) => {
 
 // Queue Routes
 app.get("/api/queue", authenticateToken, async (req, res) => {
-  const items = await QueueItem.find({ userId: req.user._id });
+  const items = await QueueItem.find({ userId: req.user.id });
   res.json(items);
 });
 
