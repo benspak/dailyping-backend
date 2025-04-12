@@ -294,7 +294,7 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
 
 app.post('/api/goal', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const { content, mode, subTasks = [], reminders = [] } = req.body;
+  const { content, mode, subTasks = [], reminders = [], note } = req.body;
   const todayISO = new Date().toISOString().split('T')[0];
 
   try {
@@ -351,7 +351,7 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
 // Update existing goal
 app.put('/api/goal/:id', authenticateToken, async (req, res) => {
   try {
-    const { content, reminders = [], subTasks = [] } = req.body;
+    const { content, reminders = [], subTasks = [], note } = req.body;
 
     const updated = await Goal.findById(req.params.id);
     if (!updated) return res.status(404).json({ error: 'Goal not found.' });
