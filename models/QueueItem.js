@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const queueItemSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   title: { type: String, required: true },
-  notes: { type: String },
+  note: { type: String },
   createdAt: { type: Date, default: Date.now },
   convertedToGoal: { type: Boolean, default: false }
 });

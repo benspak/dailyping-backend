@@ -838,16 +838,16 @@ app.get("/api/queue", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/queue", authenticateToken, async (req, res) => {
-  const { title, notes } = req.body;
+  const { title, note } = req.body;
   const item = new QueueItem({
-    userId: req.userId,      // ✅ This must be explicitly set
+    userId: req.userId,
     title,
-    notes
+    note
   });
 
   console.log("Authenticated user:", req.user);
   console.log("Body received:", req.body);
-  console.log("Received POST /queue:", { title, notes });
+  console.log("Received POST /queue:", { title, note });
   console.log("req.user:", req.user);
 
   try {
