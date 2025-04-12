@@ -848,7 +848,7 @@ app.post("/api/queue", authenticateToken, async (req, res) => {
 
   //console.log("Authenticated user:", req.user);
   //console.log("Body received:", req.body);
-  console.log("Received POST /queue:", { title, note, dueDate });
+  // console.log("Received POST /queue:", { title, note, dueDate });
   //console.log("req.user:", req.user);
 
   try {
