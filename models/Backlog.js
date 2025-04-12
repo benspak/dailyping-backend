@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const queueItemSchema = new Schema({
+const backlogSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   title: { type: String, required: true },
   note: { type: String },
@@ -10,4 +10,4 @@ const queueItemSchema = new Schema({
   dueDate: { type: Date }
 });
 
-module.exports = mongoose.model("Queue", queueItemSchema);
+module.exports = mongoose.model("Backlog", backlogSchema);

@@ -101,7 +101,7 @@ const User = require('./models/User');
 const Ping = require('./models/Ping');
 const Response = require('./models/Response');
 const Project = require('./models/Project.js');
-const QueueItem = require('./models/QueueItem.js');
+const Backlog = require('./models/Backlog.js');
 
 // Utils
 const sendPingEmail = require('./utils/sendPingEmail');
@@ -831,15 +831,15 @@ app.get("/api/responses/:id", authenticateToken, async (req, res) => {
   res.json(goal);
 });
 
-// Queue Routes
-app.get("/api/queue", authenticateToken, async (req, res) => {
-  const items = await QueueItem.find({ userId: req.user.id });
+// Backlog Routes
+app.get("/api/backlog", authenticateToken, async (req, res) => {
+  const items = await Backlog.find({ userId: req.user.id });
   res.json(items);
 });
 
-app.post("/api/queue", authenticateToken, async (req, res) => {
+app.post("/api/backlog", authenticateToken, async (req, res) => {
   const { title, note, dueDate } = req.body;
-  const item = new QueueItem({
+  const item = new Backlog({
     userId: req.user.id,
     title,
     note,
@@ -848,24 +848,24 @@ app.post("/api/queue", authenticateToken, async (req, res) => {
 
   //console.log("Authenticated user:", req.user);
   //console.log("Body received:", req.body);
-  // console.log("Received POST /queue:", { title, note, dueDate });
+  // console.log("Received POST /backlog:", { title, note, dueDate });
   //console.log("req.user:", req.user);
 
   try {
     await item.save();
     res.status(201).json(item);
   } catch (err) {
-    console.error("Queue creation failed:", err);
-    res.status(500).json({ error: "Failed to create queue item" });
+    console.error("Backlog creation failed:", err);
+    res.status(500).json({ error: "Failed to create backlog item" });
   }
 });
 
-app.delete('/api/queue/:id', authenticateToken, async (req, res) => {
+app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
   try {
-    const deleted = await QueueItem.findOneAndDelete({ _id: id, userId });
+    const deleted = await Backlog.findOneAndDelete({ _id: id, userId });
     if (!deleted) {
       return res.status(404).json({ message: "Item not found" });
     }
