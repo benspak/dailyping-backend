@@ -225,27 +225,6 @@ app.post('/auth/verify', async (req, res) => {
     }
     const accessToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token: accessToken, user });
-
-    const today = new Date().toISOString().split('T')[0];
-    if (user.loginStreak?.lastDate === today) {
-      // Already logged in today, do nothing
-    } else {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-      if (user.loginStreak?.lastDate === yesterdayStr) {
-        user.loginStreak.current += 1;
-      } else {
-        user.loginStreak.current = 1;
-      }
-
-      user.loginStreak.longest = Math.max(user.loginStreak.current, user.loginStreak.longest);
-      user.loginStreak.lastDate = today;
-      await user.save();
-    }
-
-
   } catch {
     res.status(403).json({ error: 'Invalid or expired token' });
   }
