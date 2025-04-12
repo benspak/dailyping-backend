@@ -20,6 +20,4 @@ const GoalSchema = new mongoose.Schema({
   note: { type: String, default: '' },
 });
 
-
-
 module.exports = mongoose.model('Goal', GoalSchema);
