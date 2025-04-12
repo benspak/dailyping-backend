@@ -1,32 +1,32 @@
 // cron/process-reminders.js
 const { DateTime } = require("luxon");
 const User = require("../models/User");
-const Response = require("../models/Response");
+const Goal = require("../models/Goal");
 const sendPingEmail = require("../utils/sendPingEmail");
 const sendPushNotification = require("../utils/sendPushNotification");
 
 async function processGoalReminders() {
   const now = DateTime.now().setZone("America/New_York").toFormat("HH:mm");
 
-  const responses = await Response.find({
+  const goals = await Goal.find({
     $or: [
       { "reminders": { $exists: true, $ne: [] } },
       { "subTasks.reminders": { $exists: true, $ne: [] } }
     ]
   }).populate("userId");
 
-  for (const response of responses) {
-    const { userId: user } = response;
+  for (const goal of goals) {
+    const { userId: user } = goal;
     const tz = user.timezone || "America/New_York";
     const localNow = DateTime.now().setZone(tz).toFormat("HH:mm");
 
     // 🔔 Goal Reminder
-    if ((response.reminders || []).includes(localNow)) {
-      await sendGoalReminder(user, response.content);
+    if ((goal.reminders || []).includes(localNow)) {
+      await sendGoalReminder(user, goal.content);
     }
 
     // 🔔 Subtask Reminders
-    (response.subTasks || []).forEach(async (t) => {
+    (goal.subTasks || []).forEach(async (t) => {
       if ((t.reminders || []).includes(localNow)) {
         await sendGoalReminder(user, t.text);
       }

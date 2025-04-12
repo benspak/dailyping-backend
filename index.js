@@ -99,7 +99,7 @@ webpush.setVapidDetails(
 // Models
 const User = require('./models/User');
 const Ping = require('./models/Ping');
-const Response = require('./models/Response');
+const Goal = require('./models/Goal.js');
 const Project = require('./models/Project.js');
 const Backlog = require('./models/Backlog.js');
 
@@ -292,15 +292,15 @@ app.post('/billing/create-checkout-session', authenticateToken, async (req, res)
   res.json({ url: session.url });
 });
 
-app.post('/api/response', authenticateToken, async (req, res) => {
+app.post('/api/goal', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { content, mode, subTasks = [], reminders = [] } = req.body;
   const todayISO = new Date().toISOString().split('T')[0];
 
   try {
-    // const existing = await Response.findOne({ userId, date: todayISO });
+    // const existing = await Goal.findOne({ userId, date: todayISO });
     // if (existing) {
-    //  return res.status(400).json({ error: 'Response already submitted today.' });
+    //  return res.status(400).json({ error: 'Goal already submitted today.' });
     // }
 
     const user = await User.findById(userId);
@@ -311,7 +311,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       checked: false
     })).filter(t => t.text);
 
-    const response = new Response({
+    const goal = new Goal({
       userId,
       content,
       mode,
@@ -322,7 +322,7 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       edited: false
     });
 
-    await response.save();
+    await goal.save();
 
     // Update streak
     if (user) {
@@ -339,21 +339,21 @@ app.post('/api/response', authenticateToken, async (req, res) => {
       await user.save();
     }
 
-    res.json(response);
+    res.json(goal);
   } catch (err) {
-    console.error('❌ Error creating response:', err.message);
-    res.status(500).json({ error: 'Failed to submit response' });
+    console.error('❌ Error creating goal:', err.message);
+    res.status(500).json({ error: 'Failed to submit goal' });
   }
 });
 
 
-// Update existing response
-app.put('/api/response/:id', authenticateToken, async (req, res) => {
+// Update existing goal
+app.put('/api/goal/:id', authenticateToken, async (req, res) => {
   try {
     const { content, reminders = [], subTasks = [] } = req.body;
 
-    const updated = await Response.findById(req.params.id);
-    if (!updated) return res.status(404).json({ error: 'Response not found.' });
+    const updated = await Goal.findById(req.params.id);
+    if (!updated) return res.status(404).json({ error: 'Goal not found.' });
 
     const user = await User.findById(req.user.id);
     if (!user) return res.status(403).json({ error: 'Unauthorized' });
@@ -372,19 +372,19 @@ app.put('/api/response/:id', authenticateToken, async (req, res) => {
     await updated.save();
     res.json({ success: true, updated });
   } catch (err) {
-    console.error('❌ PUT /response/:id error:', err);
-    res.status(500).json({ error: 'Failed to update response.' });
+    console.error('❌ PUT /goal/:id error:', err);
+    res.status(500).json({ error: 'Failed to update goal.' });
   }
 });
 
-app.get('/api/responses/all', authenticateToken, async (req, res) => {
-  const responses = await Response.find({ userId: req.user.id }).sort({ date: -1 });
-  res.json(responses);
+app.get('/api/goals/all', authenticateToken, async (req, res) => {
+  const goals = await goal.find({ userId: req.user.id }).sort({ date: -1 });
+  res.json(goals);
 });
 
-app.get('/api/responses/today', authenticateToken, async (req, res) => {
+app.get('/api/goals/today', authenticateToken, async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
-  const existing = await Response.findOne({ userId: req.user.id, date: today });
+  const existing = await Goal.findOne({ userId: req.user.id, date: today });
   res.json(existing
   ? {
       alreadySubmitted: true,
@@ -503,17 +503,17 @@ app.post('/cron/weekly-summary', async (req, res) => {
 
   for (const user of users) {
     try {
-      const responses = await Response.find({
+      const goals = await Goal.find({
         userId: user._id,
         createdAt: { $gte: startOfWeek }
       }).sort({ date: 1 });
 
-      const content = responses.map(r => `<li><strong>${r.date}</strong>: ${r.content}</li>`).join('');
+      const content = goals.map(r => `<li><strong>${r.date}</strong>: ${r.content}</li>`).join('');
 
       const html = `
         <div style="font-family:sans-serif;padding:1rem;">
           <h2>Your Weekly Summary</h2>
-          <p>You completed <strong>${responses.length}</strong> days of goals this week.</p>
+          <p>You completed <strong>${goals.length}</strong> days of goals this week.</p>
           <ul>${content}</ul>
           <p><strong>Goal streak:</strong> ${user.streak?.current ?? 0} 🔥</p>
           <p>Keep the momentum going!</p>
@@ -633,50 +633,50 @@ app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
 });
 
 // Toggle completion for a specific sub-task
-  app.post('/api/response/toggle-subtask', authenticateToken, async (req, res) => {
-    const { responseId, index, completed } = req.body;
+  app.post('/api/goal/toggle-subtask', authenticateToken, async (req, res) => {
+    const { goalId, index, completed } = req.body;
 
-    if (!responseId || typeof index !== 'number') {
-      return res.status(400).json({ error: 'Missing responseId or index' });
+    if (!goalId || typeof index !== 'number') {
+      return res.status(400).json({ error: 'Missing goalId or index' });
     }
 
     try {
-      const response = await Response.findById(responseId);
-      if (!response || response.userId.toString() !== req.user.id) {
+      const goal = await Goal.findById(goalId);
+      if (!goal || goal.userId.toString() !== req.user.id) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
 
-      if (!Array.isArray(response.subTasks) || index >= response.subTasks.length) {
+      if (!Array.isArray(goal.subTasks) || index >= goal.subTasks.length) {
         return res.status(400).json({ error: 'Invalid subtask index' });
       }
 
-      response.subTasks[index].completed = completed;
-      await response.save();
+      goal.subTasks[index].completed = completed;
+      await goal.save();
 
-      res.json({ success: true, updated: response.subTasks[index] });
+      res.json({ success: true, updated: goal.subTasks[index] });
     } catch (err) {
       console.error('❌ Subtask update error:', err.message);
       res.status(500).json({ error: 'Failed to update subtask' });
     }
   });
 
-  app.post('/api/response/toggle-goal', authenticateToken, async (req, res) => {
-  const { responseId, completed } = req.body;
+  app.post('/api/goal/toggle-goal', authenticateToken, async (req, res) => {
+  const { goalId, completed } = req.body;
 
-  if (!responseId || typeof completed !== 'boolean') {
+  if (!goalId || typeof completed !== 'boolean') {
     return res.status(400).json({ error: 'Missing or invalid data' });
   }
 
   try {
-    const response = await Response.findById(responseId);
-    if (!response || response.userId.toString() !== req.user.id) {
+    const goal = await Goal.findById(goalId);
+    if (!goal || goal.userId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    response.goalCompleted = completed;
-    await response.save();
+    goal.goalCompleted = completed;
+    await goal.save();
 
-    res.json({ success: true, updated: response });
+    res.json({ success: true, updated: goal });
   } catch (err) {
     console.error('❌ Goal completion update error:', err.message);
     res.status(500).json({ error: 'Failed to update goal completion' });
@@ -717,15 +717,15 @@ app.get('/api/public/:username/:date', async (req, res) => {
   const user = await User.findOne({ username });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const response = await Response.findOne({ userId: user._id, date });
-  if (!response) return res.status(404).json({ error: 'No goal found' });
+  const goal = await Goal.findOne({ userId: user._id, date });
+  if (!goal) return res.status(404).json({ error: 'No goal found' });
 
   res.json({
     username,
     date,
-    content: response.content,
-    subTasks: response.subTasks,
-    completed: response.goalCompleted,
+    content: goal.content,
+    subTasks: goal.subTasks,
+    completed: goal.goalCompleted,
   });
 });
 
@@ -738,15 +738,15 @@ app.get('/api/public-goal/:username/:date', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     // Date YYYY-MM-DD
-    const response = await Response.findOne({ userId: user._id, date });
-    if (!response) return res.status(404).json({ error: 'Goal not found for that date' });
+    const goal = await Goal.findOne({ userId: user._id, date });
+    if (!goal) return res.status(404).json({ error: 'Goal not found for that date' });
 
     res.json({
       username: user.username,
-      date: response.date,
-      content: response.content,
-      subTasks: response.subTasks || [],
-      edited: response.edited || false
+      date: goal.date,
+      content: goal.content,
+      subTasks: goal.subTasks || [],
+      edited: goal.edited || false
     });
   } catch (err) {
     console.error('❌ Failed to fetch public goal:', err.message);
@@ -763,7 +763,7 @@ app.get('/public/user/:username', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const publicGoals = await Response.find({
+    const publicGoals = await Goal.find({
       userId: user._id,
       isPublic: true
     }).sort({ date: -1 }).limit(10); // or whatever number you want
@@ -825,8 +825,8 @@ app.put("/api/projects/:id", authenticateToken, async (req, res) => {
   res.json(project);
 });
 
-app.get("/api/responses/:id", authenticateToken, async (req, res) => {
-  const goal = await Response.findOne({ _id: req.params.id });
+app.get("/api/goals/:id", authenticateToken, async (req, res) => {
+  const goal = await Goal.findOne({ _id: req.params.id });
   if (!goal) return res.status(404).json({ message: "Not found" });
   res.json(goal);
 });
