@@ -225,6 +225,27 @@ app.post('/auth/verify', async (req, res) => {
     }
     const accessToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token: accessToken, user });
+
+    const today = new Date().toISOString().split('T')[0];
+    if (user.loginStreak?.lastDate === today) {
+      // Already logged in today, do nothing
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      if (user.loginStreak?.lastDate === yesterdayStr) {
+        user.loginStreak.current += 1;
+      } else {
+        user.loginStreak.current = 1;
+      }
+
+      user.loginStreak.longest = Math.max(user.loginStreak.current, user.loginStreak.longest);
+      user.loginStreak.lastDate = today;
+      await user.save();
+    }
+
+
   } catch {
     res.status(403).json({ error: 'Invalid or expired token' });
   }
@@ -235,7 +256,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // ✅ Send all necessary fields
+    // Send all necessary fields
     res.json({
       userId: user.id,
       email: user.email,
@@ -243,10 +264,10 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       pro: user.pro,
       preferences: user.preferences || {},
       timezone: user.timezone || 'America/New_York',
-      isAdmin: user.isAdmin || false, // ✅ Needed for AdminPanel
+      isAdmin: user.isAdmin || false, // Needed for AdminPanel
       username: user.username || null,
-      bio: user.bio, // ✅ This must be included
-      needsUsername: !user.username // 👈 Add this
+      bio: user.bio,
+      needsUsername: !user.username
     });
 
   } catch (err) {

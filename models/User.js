@@ -32,6 +32,12 @@ const UserSchema = new mongoose.Schema({
     lastEntryDate: { type: Date }
   },
 
+  loginStreak: {
+    current: { type: Number, default: 0 },
+    longest: { type: Number, default: 0 },
+    lastDate: { type: String, default: null }
+  },
+
   // Admin flag
   isAdmin: { type: Boolean, default: false },
 
