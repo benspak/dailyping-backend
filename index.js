@@ -298,10 +298,10 @@ app.post('/api/response', authenticateToken, async (req, res) => {
   const todayISO = new Date().toISOString().split('T')[0];
 
   try {
-    const existing = await Response.findOne({ userId, date: todayISO });
-    if (existing) {
-      return res.status(400).json({ error: 'Response already submitted today.' });
-    }
+    // const existing = await Response.findOne({ userId, date: todayISO });
+    // if (existing) {
+    //  return res.status(400).json({ error: 'Response already submitted today.' });
+    // }
 
     const user = await User.findById(userId);
 
