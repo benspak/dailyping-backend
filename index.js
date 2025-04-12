@@ -845,10 +845,10 @@ app.post("/api/queue", authenticateToken, async (req, res) => {
     note
   });
 
-  console.log("Authenticated user:", req.user);
-  console.log("Body received:", req.body);
-  console.log("Received POST /queue:", { title, note });
-  console.log("req.user:", req.user);
+  //console.log("Authenticated user:", req.user);
+  //console.log("Body received:", req.body);
+  //console.log("Received POST /queue:", { title, note });
+  //console.log("req.user:", req.user);
 
   try {
     await item.save();
