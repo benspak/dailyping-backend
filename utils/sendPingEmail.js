@@ -26,7 +26,7 @@ async function sendPingEmail({ to, userName, goalPrompt, tone = 'gentle' }) {
       <div style="font-family: sans-serif; padding: 1rem;">
         <h2>Hi${userName ? ` ${userName}` : ''},</h2>
         <p>${prompt}</p>
-        <a href="https://dailyping.org/goals/new" style="display:inline-block; padding:0.75rem 1.5rem; background:#111; color:#fff; text-decoration:none; border-radius:5px;">Create a daily goal!</a>
+        <a href="https://dailyping.org/goals/" style="display:inline-block; padding:0.75rem 1.5rem; background:#111; color:#fff; text-decoration:none; border-radius:5px;">Create a daily goal!</a>
         <p style="margin-top:2rem; font-size:0.8rem; color:#999;">You're doing great. — DailyPing</p>
       </div>
     `

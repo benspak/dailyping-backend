@@ -319,7 +319,8 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
       reminders: user.pro === 'active' ? reminders : [],
       subTasks: cleanedSubTasks,
       createdAt: new Date(),
-      edited: false
+      edited: false,
+      note
     });
 
     await goal.save();
