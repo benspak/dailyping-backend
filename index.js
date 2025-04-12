@@ -859,4 +859,20 @@ app.post("/api/queue", authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/queue/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const deleted = await QueueItem.findOneAndDelete({ _id: id, userId });
+    if (!deleted) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
