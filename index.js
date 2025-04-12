@@ -369,6 +369,7 @@ app.put('/api/goal/:id', authenticateToken, async (req, res) => {
     })).filter(t => t.text);
 
     updated.edited = true;
+    updated.note = note;
 
     await updated.save();
     res.json({ success: true, updated });
