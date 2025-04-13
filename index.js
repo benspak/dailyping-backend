@@ -315,7 +315,6 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
       userId,
       content,
       mode,
-      date: todayISO,
       date,
       reminders: user.pro === 'active' ? reminders : [],
       subTasks: cleanedSubTasks,
