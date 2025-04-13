@@ -11,7 +11,7 @@ const GoalSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   content: { type: String, required: true },
   mode: { type: String, default: 'goal' }, // could expand for other types later
-  date: { type: String, required: true }, // 'YYYY-MM-DD' format
+  date: { type: String }, // 'YYYY-MM-DD' format
   reminders: [{ type: String }],
   subTasks: [SubTaskSchema],
   goalCompleted: { type: Boolean, default: false },
