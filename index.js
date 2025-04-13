@@ -347,6 +347,43 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
   }
 });
 
+const moment = require('moment-timezone');
+
+app.post('/api/streak/update', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const userTimezone = user.timezone || process.env.SERVER_TIMEZONE || 'America/New_York';
+    const now = moment().tz(userTimezone);
+    const today = now.format('YYYY-MM-DD');
+    const yesterday = now.clone().subtract(1, 'day').format('YYYY-MM-DD');
+
+    const lastEntry = user.streak?.lastEntryDate?.toISOString().split('T')[0];
+
+    if (lastEntry === today) {
+      return res.status(200).json({ message: 'Already updated today' });
+    } else if (lastEntry === yesterday) {
+      user.streak.current += 1;
+    } else {
+      user.streak.current = 1;
+    }
+
+    user.streak.lastEntryDate = now.toDate();
+    user.streak.max = Math.max(user.streak.max || 0, user.streak.current);
+    await user.save();
+
+    res.json({
+      message: 'Streak updated',
+      current: user.streak.current,
+      max: user.streak.max
+    });
+  } catch (err) {
+    console.error('❌ Failed to update streak:', err.message);
+    res.status(500).json({ error: 'Failed to update streak' });
+  }
+});
+
 
 
 // Update existing goal
