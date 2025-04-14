@@ -986,13 +986,10 @@ app.post('/api/ai/suggest-note', authenticateToken, async (req, res) => {
 
   if (!goal) return res.status(400).json({ error: 'Goal text is required' });
 
-  const safeGoal = goal.slice(0, 500);
-  const cleanSubtasks = (subtasks || []).map(s => s.trim()).filter(Boolean).slice(0, 5);
-
   try {
     const prompt = `Provide a helpful, detailed note for the following goal and subtasks.
-Goal: "${safeGoal}"
-Subtasks: ${cleanSubtasks.length ? cleanSubtasks.join(', ') : 'None'}
+Goal: "${goal}"
+Subtasks: ${subtasks?.length ? subtasks.join(', ') : 'None'}
 
 Make the note actionable and motivating, tailored for someone with ADHD.`;
 
@@ -1004,8 +1001,6 @@ Make the note actionable and motivating, tailored for someone with ADHD.`;
       ],
       max_tokens: 300,
     });
-
-    console.log(`[AI][Note] Tokens used: ${response.usage?.total_tokens}`);
 
     const message = response.choices[0].message.content;
     res.json({ note: message });
