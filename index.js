@@ -936,9 +936,8 @@ app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
 });
 
 // OpenAI Suggest Subtasks
-app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
+app.post('/api/ai/suggest-subtasks', async (req, res) => {
   const { goal } = req.body;
-
   if (!goal) return res.status(400).json({ error: 'Goal text is required' });
 
   try {
@@ -956,15 +955,16 @@ app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
     try {
       subtasks = JSON.parse(message);
     } catch (err) {
+      console.error('⚠️ JSON parse fallback triggered:', message);
       subtasks = message
         .split('\n')
         .filter(Boolean)
-        .map(s => s.replace(/^\d+\.\s*/, '').trim());
+        .map(line => line.replace(/^\d+\.\s*/, '').trim());
     }
 
     res.json({ subtasks });
   } catch (err) {
-    console.error('AI error:', err);
+    console.error('❌ OpenAI error in /suggest-subtasks:', err);
     res.status(500).json({ error: 'Failed to generate subtasks' });
   }
 });
