@@ -949,7 +949,7 @@ app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
         { role: 'user', content: prompt },
         { role: 'system', content: 'You are a helpful productivity assistant for ADHD users.' },
       ],
-      max_tokens: 300,
+      max_tokens: 200,
     });
 
     const message = response.choices[0].message.content;
