@@ -986,21 +986,26 @@ app.post('/api/ai/suggest-note', authenticateToken, async (req, res) => {
 
   if (!goal) return res.status(400).json({ error: 'Goal text is required' });
 
+  const safeGoal = goal.slice(0, 500);
+  const cleanSubtasks = (subtasks || []).map(s => s.trim()).filter(Boolean).slice(0, 5);
+
   try {
     const prompt = `Provide a helpful, detailed note for the following goal and subtasks.
-Goal: "${goal}"
-Subtasks: ${subtasks?.length ? subtasks.join(', ') : 'None'}
+Goal: "${safeGoal}"
+Subtasks: ${cleanSubtasks.length ? cleanSubtasks.join(', ') : 'None'}
 
 Make the note actionable and motivating, tailored for someone with ADHD.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
-        { role: 'system', content: 'You are a helpful productivity assistant for ADHD users.' },
+        { role: 'system', content: 'You are a helpful productivity assistant for ADHD users. If they enter a short goal and some subtasks, your directive is to be creative and come up with a detailed implementation note to help the user achieve the goal and subtasks.' },
         { role: 'user', content: prompt }
       ],
       max_tokens: 300,
     });
+
+    console.log(`[AI][Note] Tokens used: ${response.usage?.total_tokens}`);
 
     const message = response.choices[0].message.content;
     res.json({ note: message });
