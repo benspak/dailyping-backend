@@ -944,9 +944,12 @@ app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
     const prompt = `Break this goal into 3 simple, actionable subtasks: "${goal}". Return them as a JSON array of strings.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 100,
+      model: 'gpt-4',
+      messages: [
+        { role: 'user', content: prompt },
+        { role: 'system', content: 'You are a helpful productivity assistant for ADHD users.' },
+      ],
+      max_tokens: 300,
     });
 
     const message = response.choices[0].message.content;
