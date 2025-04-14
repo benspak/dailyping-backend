@@ -991,7 +991,7 @@ app.post('/api/ai/suggest-note', authenticateToken, async (req, res) => {
 Goal: "${goal}"
 Subtasks: ${subtasks?.length ? subtasks.join(', ') : 'None'}
 
-Make the note actionable and motivating, tailored for someone with ADHD. Keep the note less than 300 characters.`;
+Make the note actionable and motivating, tailored for someone with ADHD. Keep the note less than 3000 characters.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -999,7 +999,7 @@ Make the note actionable and motivating, tailored for someone with ADHD. Keep th
         { role: 'system', content: 'You are a helpful productivity assistant for ADHD users. If they enter a short goal and some subtasks, your directive is to be creative and come up with a detailed implementation note to help the user achieve the goal and subtasks.' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 300,
+      max_tokens: 3000,
     });
 
     const message = response.choices[0].message.content;
