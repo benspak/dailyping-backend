@@ -936,7 +936,7 @@ app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
 });
 
 // OpenAI Suggest Subtasks
-app.post('/api/ai/suggest-subtasks', async (req, res) => {
+app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
   const { goal } = req.body;
   if (!goal) return res.status(400).json({ error: 'Goal text is required' });
 
@@ -971,7 +971,7 @@ app.post('/api/ai/suggest-subtasks', async (req, res) => {
 
 
 // OpenAI Suggest Note
-app.post('/api/ai/suggest-note', async (req, res) => {
+app.post('/api/ai/suggest-note', authenticateToken, async (req, res) => {
   const { goal, subtasks } = req.body;
 
   if (!goal) return res.status(400).json({ error: 'Goal text is required' });
