@@ -12,6 +12,7 @@ const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const webpush = require('web-push');
+const { Configuration, OpenAIApi } = require('openai');
 
 const app = express();
 const port = process.env.PORT || 5555;
@@ -383,8 +384,6 @@ app.post('/api/streak/update', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to update streak' });
   }
 });
-
-
 
 // Update existing goal
 app.put('/api/goal/:id', authenticateToken, async (req, res) => {
@@ -930,5 +929,49 @@ app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// OpenAI Suggest Subtasks
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+app.post('/suggest-subtasks', async (req, res) => {
+  const { goal } = req.body;
+
+  if (!goal) return res.status(400).json({ error: 'Goal text is required' });
+
+  try {
+    const prompt = `Break this goal into 3 simple, actionable subtasks: "${goal}". Return them as a JSON array of strings.`;
+
+    const response = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 100,
+    });
+
+    const message = response.data.choices[0].message.content;
+
+    // Try parsing JSON response
+    let subtasks;
+    try {
+      subtasks = JSON.parse(message);
+    } catch (err) {
+      // Fallback if it's not formatted exactly as JSON
+      subtasks = message.split('\n').filter(Boolean).map(s => s.replace(/^\d+\.\s*/, ''));
+    }
+
+    res.json({ subtasks });
+  } catch (err) {
+    console.error('AI error:', err);
+    res.status(500).json({ error: 'Failed to generate subtasks' });
+  }
+});
+
+module.exports = router;
+
+
+
+
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
