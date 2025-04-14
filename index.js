@@ -12,7 +12,7 @@ const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const webpush = require('web-push');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require("openai");
 
 const app = express();
 const port = process.env.PORT || 5555;
@@ -96,6 +96,11 @@ webpush.setVapidDetails(
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
+
+// Open AI API
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Models
 const User = require('./models/User');
@@ -931,11 +936,6 @@ app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
 });
 
 // OpenAI Suggest Subtasks
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
 app.post('/suggest-subtasks', async (req, res) => {
   const { goal } = req.body;
 
@@ -944,21 +944,22 @@ app.post('/suggest-subtasks', async (req, res) => {
   try {
     const prompt = `Break this goal into 3 simple, actionable subtasks: "${goal}". Return them as a JSON array of strings.`;
 
-    const response = await openai.createChatCompletion({
+    const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 100,
     });
 
-    const message = response.data.choices[0].message.content;
+    const message = response.choices[0].message.content;
 
-    // Try parsing JSON response
     let subtasks;
     try {
       subtasks = JSON.parse(message);
     } catch (err) {
-      // Fallback if it's not formatted exactly as JSON
-      subtasks = message.split('\n').filter(Boolean).map(s => s.replace(/^\d+\.\s*/, ''));
+      subtasks = message
+        .split('\n')
+        .filter(Boolean)
+        .map(s => s.replace(/^\d+\.\s*/, '').trim());
     }
 
     res.json({ subtasks });
@@ -968,10 +969,35 @@ app.post('/suggest-subtasks', async (req, res) => {
   }
 });
 
-module.exports = router;
 
+// OpenAI Suggest Note
+app.post('/suggest-note', async (req, res) => {
+  const { goal, subtasks } = req.body;
 
+  if (!goal) return res.status(400).json({ error: 'Goal text is required' });
 
+  try {
+    const prompt = `Provide a helpful, detailed note for the following goal and subtasks.
+Goal: "${goal}"
+Subtasks: ${subtasks?.length ? subtasks.join(', ') : 'None'}
 
+Make the note actionable and motivating, tailored for someone with ADHD.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: 'You are a helpful productivity assistant for ADHD users.' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 300,
+    });
+
+    const message = response.choices[0].message.content;
+    res.json({ note: message });
+  } catch (err) {
+    console.error('AI error (suggest-note):', err);
+    res.status(500).json({ error: 'Failed to generate note' });
+  }
+});
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
