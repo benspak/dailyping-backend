@@ -936,29 +936,36 @@ app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
 });
 
 // OpenAI Suggest Subtasks
-app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
-  const { goal } = req.body;
-  if (!goal) return res.status(400).json({ error: 'Goal text is required' });
+app.post('/api/ai/suggest-subtasks', async (req, res) => {
+  const { goal, existing = [] } = req.body;
+
+  if (!goal) return res.status(400).json({ error: 'Goal is required' });
 
   try {
-    const prompt = `Break this goal into 3 simple, actionable subtasks: "${goal}". Return them as a JSON array of strings.`;
+    const prompt = `Goal: "${goal}"\n` +
+      (existing.length > 0
+        ? `Current subtasks: ${existing.join(", ")}\n`
+        : `There are no current subtasks.\n`) +
+      `Suggest 3 helpful, creative new subtasks to support this goal, avoiding duplication. Return ONLY a JSON array of strings.`;
 
-    const response = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { role: 'user', content: prompt },
-        { role: 'system', content: 'You are a helpful productivity assistant for ADHD users.' },
+        {
+          role: 'system',
+          content: 'You are a helpful productivity assistant for ADHD users. If they enter a short goal and some sub tasks, your directive is to be creative and come up with related suggestions for sub tasks to help the user achieve the goal.'
+        }
       ],
       max_tokens: 200,
     });
 
-    const message = response.choices[0].message.content;
+    const message = completion.choices[0].message.content;
 
     let subtasks;
     try {
       subtasks = JSON.parse(message);
-    } catch (err) {
-      console.error('⚠️ JSON parse fallback triggered:', message);
+    } catch {
       subtasks = message
         .split('\n')
         .filter(Boolean)
@@ -968,7 +975,7 @@ app.post('/api/ai/suggest-subtasks', authenticateToken, async (req, res) => {
     res.json({ subtasks });
   } catch (err) {
     console.error('❌ OpenAI error in /suggest-subtasks:', err);
-    res.status(500).json({ error: 'Failed to generate subtasks' });
+    res.status(500).json({ error: 'AI failed to generate subtasks.' });
   }
 });
 
