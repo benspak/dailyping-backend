@@ -163,79 +163,67 @@ cron.schedule('* * * * *', async () => {
 }, { timezone: 'America/New_York' });
 
 // Stripe sync cron every minute
+// Enhanced Stripe sync block with logging for debugging pro activation
 cron.schedule('* * * * *', async () => {
   console.log('🔁 Running Stripe subscription sync...');
   try {
     const users = await User.find({ stripeSubscriptionId: { $exists: true } });
-        for (const user of users) {
-        try {
-          const subId = user.stripeSubscriptionId?.trim();
-          // If no subId set to inactive
-          if (!subId) {
-            if (user.pro === 'active') {
-              user.pro = 'inactive';
-              await user.save();
 
-              if (shouldSendProEmail(user)) {
-                await resend.emails.send({
-                  from: process.env.FROM_EMAIL,
-                  to: user.email,
-                  subject: 'Your Pro subscription is no longer active',
-                  html: `<p>Hi ${user.username || ''},</p>
-                        <p>Your DailyPing Pro access has been downgraded. If this is unexpected, please check your billing or resubscribe from your account settings.</p>`
-                });
-                user.lastProEmailSentAt = new Date();
-                await user.save();
-              }
-            }
-            continue;
+    for (let user of users) {
+      try {
+        const subId = user.stripeSubscriptionId?.trim();
+        console.log(`🔍 Checking subId for ${user.username}:`, subId);
+
+        if (!subId) {
+          if (user.pro === 'active') {
+            user.pro = 'inactive';
+            user.lastProEmailSentAt = new Date();
+            await user.save();
+            console.warn(`🛑 Downgraded ${user.username} due to missing subId`);
           }
+          continue;
+        }
 
-          // If user isPro set to active
-          const sub = await stripe.subscriptions.retrieve(subId);
-          const isPro = ['active', 'trialing'].includes(sub.status);
+        const sub = await stripe.subscriptions.retrieve(subId);
+        console.log(`📦 Subscription status for ${user.username}:`, sub.status);
 
-          if (isPro) {
-            if (user.pro !== 'active') {
-              user.pro = 'active';
-              if (shouldSendProEmail(user)) {
-                await resend.emails.send({
-                  from: process.env.FROM_EMAIL,
-                  to: user.email,
-                  subject: 'Welcome to DailyPing Pro!',
-                  html: `<p>Hi ${user.username || ''},</p>
-                        <p>You're now enjoying DailyPing Pro — including reminder scheduling, AI goals, and more!</p>`
-                });
-                user.lastProEmailSentAt = new Date();
-              }
+        const isPro = ['active', 'trialing'].includes(sub.status);
+
+        if (isPro) {
+          if (user.pro !== 'active') {
+            user.pro = 'active';
+            user.lastProEmailSentAt = new Date();
+            try {
               await user.save();
+              console.log(`✅ Upgraded ${user.username} to Pro`);
+            } catch (saveErr) {
+              console.error(`❌ Failed to save pro status for ${user.username}:`, saveErr.message);
             }
-          } 
-
-        } catch (err) {
-          console.error(`❌ Stripe check failed for ${user.username}:`, err.message);
-          if (err.message.includes('No such subscription') || err.code === 'resource_missing') {
-            if (user.pro === 'active') {
-              user.pro = 'inactive';
-              if (shouldSendProEmail(user)) {
-                await resend.emails.send({
-                  from: process.env.FROM_EMAIL,
-                  to: user.email,
-                  subject: 'Your DailyPing Pro subscription is missing',
-                  html: `<p>Hi ${user.username || ''},</p>
-                        <p>We couldn't verify your subscription. Your Pro status has been paused. If this was in error, please check your billing settings.</p>`
-                });
-                user.lastProEmailSentAt = new Date();
-              }
-              await user.save();
-            }
+          } else {
+            console.log(`ℹ️ ${user.username} already marked as Pro`);
           }
+        } else {
+          if (user.pro === 'active') {
+            user.pro = 'inactive';
+            user.lastProEmailSentAt = new Date();
+            await user.save();
+            console.warn(`🛑 Downgraded ${user.username} due to status: ${sub.status}`);
+          }
+        }
+      } catch (err) {
+        console.error(`❌ Stripe check failed for ${user.username}:`, err.message);
+        if (err.message.includes('No such subscription') || err.code === 'resource_missing') {
+          user.pro = 'inactive';
+          user.lastProEmailSentAt = new Date();
+          await user.save();
+          console.warn(`🛑 Downgraded ${user.username} due to missing or invalid subscription`);
         }
       }
-        } catch (err) {
-          console.error('❌ Stripe sync cron failed:', err.message);
-        }
-      }, { timezone: 'America/New_York' });
+    }
+  } catch (err) {
+    console.error('❌ Stripe sync cron failed:', err.message);
+  }
+}, { timezone: 'America/New_York' });
 
 // 🔁 1. Cron Job — Every Sunday @ 8 AM (EST)
 cron.schedule('0 8 * * 0', async () => {
