@@ -65,7 +65,7 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
 // app.use(express.json()); // make sure this exists at the top of your backend
 
-const allowedOrigins = ['https://dailyping.org', 'https://stripe.com'];
+const allowedOrigins = ['https://dailyping.org', 'https://stripe.com', 'http://localhost:3000'];
 
 // Production
  app.use(cors({
@@ -77,7 +77,8 @@ const allowedOrigins = ['https://dailyping.org', 'https://stripe.com'];
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
  }));
 
 // Allow all, only for development
