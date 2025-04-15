@@ -169,8 +169,10 @@ cron.schedule('* * * * *', async () => {
     const users = await User.find({ stripeSubscriptionId: { $exists: true } });
         for (const user of users) {
           try {
-            if (!user.stripeSubscriptionId || user.stripeSubscriptionId.trim() === '') {
-              console.warn(`⚠️ Skipping user ${user.username} due to missing stripeSubscriptionId`);
+          if (!user.stripeSubscriptionId || user.stripeSubscriptionId.trim() === '') {
+              user.pro = 'inactive';
+              await user.save();
+              console.warn(`🛑 Downgraded ${user.username} due to missing stripeSubscriptionId`);
               continue;
             }
             const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
