@@ -165,14 +165,14 @@ cron.schedule('* * * * *', async () => {
 // Stripe sync cron every minute
 // Enhanced Stripe sync block with logging for debugging pro activation
 cron.schedule('* * * * *', async () => {
-  console.log('🔁 Running Stripe subscription sync...');
+  // console.log('🔁 Running Stripe subscription sync...');
   try {
     const users = await User.find({ stripeSubscriptionId: { $exists: true } });
 
     for (let user of users) {
       try {
         const subId = user.stripeSubscriptionId?.trim();
-        console.log(`🔍 Checking subId for ${user.username}:`, Boolean(subId));
+        // console.log(`🔍 Checking subId for ${user.username}:`, subId);
 
         if (!subId) {
           if (user.pro === 'active') {
@@ -185,7 +185,7 @@ cron.schedule('* * * * *', async () => {
         }
 
         const sub = await stripe.subscriptions.retrieve(subId);
-        console.log(`📦 Subscription status for ${user.username}:`, sub.status);
+        // console.log(`📦 Subscription status for ${user.username}:`, sub.status);
 
         const isPro = ['active', 'trialing'].includes(sub.status);
 
@@ -200,7 +200,7 @@ cron.schedule('* * * * *', async () => {
               console.error(`❌ Failed to save pro status for ${user.username}:`, saveErr.message);
             }
           } else {
-            console.log(`ℹ️ ${user.username} already marked as Pro`);
+            // console.log(`ℹ️ ${user.username} already marked as Pro`);
           }
         } else {
           if (user.pro === 'active') {
