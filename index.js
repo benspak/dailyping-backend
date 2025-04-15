@@ -17,6 +17,25 @@ const OpenAI = require("openai");
 const app = express();
 const port = process.env.PORT || 5555;
 
+// Production CORS
+const allowedOrigins = ['https://dailyping.org', 'https://stripe.com'];
+
+ app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+ }));
+
+// Allow all, only for development
+// app.use(cors());
+
 // Webhook must be above bodyParser and instances of app.use
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   // console.log('🚨 Webhook endpoint hit');
@@ -62,27 +81,6 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
 
   res.json({ received: true });
 });
-
-// app.use(express.json()); // make sure this exists at the top of your backend
-
-const allowedOrigins = ['https://dailyping.org', 'https://stripe.com', 'http://localhost:3000'];
-
-// Production
- app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
- }));
-
-// Allow all, only for development
-// app.use(cors());
 
 app.use(bodyParser.json());
 
