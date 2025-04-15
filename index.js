@@ -172,7 +172,7 @@ cron.schedule('* * * * *', async () => {
     for (let user of users) {
       try {
         const subId = user.stripeSubscriptionId?.trim();
-        console.log(`🔍 Checking subId for ${user.username}:`, subId);
+        console.log(`🔍 Checking subId for ${user.username}:`, Boolean(subId));
 
         if (!subId) {
           if (user.pro === 'active') {
