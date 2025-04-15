@@ -180,6 +180,11 @@ cron.schedule('* * * * *', async () => {
 
       } catch (err) {
         console.error(`❌ Stripe check failed for ${user.username}:`, err.message);
+        if (err.message.includes('No such subscription')) {
+          user.pro = 'inactive';
+          await user.save();
+          console.log(`🛑 Marked ${user.username} as inactive due to missing subscription`);
+        }
       }
     }
   } catch (err) {
