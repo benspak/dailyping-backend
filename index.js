@@ -170,7 +170,7 @@ cron.schedule('* * * * *', async () => {
         for (const user of users) {
         try {
           const subId = user.stripeSubscriptionId?.trim();
-
+          // If no subId set to inactive
           if (!subId) {
             if (user.pro === 'active') {
               user.pro = 'inactive';
@@ -191,6 +191,7 @@ cron.schedule('* * * * *', async () => {
             continue;
           }
 
+          // If user isPro set to active
           const sub = await stripe.subscriptions.retrieve(subId);
           const isPro = ['active', 'trialing'].includes(sub.status);
 
@@ -209,22 +210,7 @@ cron.schedule('* * * * *', async () => {
               }
               await user.save();
             }
-          } else {
-            if (user.pro === 'active') {
-              user.pro = 'inactive';
-              if (shouldSendProEmail(user)) {
-                await resend.emails.send({
-                  from: process.env.FROM_EMAIL,
-                  to: user.email,
-                  subject: 'Your DailyPing Pro has been downgraded',
-                  html: `<p>Hi ${user.username || ''},</p>
-                        <p>Your subscription appears to be inactive. Pro features have been paused. You can resubscribe anytime from your billing settings.</p>`
-                });
-                user.lastProEmailSentAt = new Date();
-              }
-              await user.save();
-            }
-          }
+          } 
 
         } catch (err) {
           console.error(`❌ Stripe check failed for ${user.username}:`, err.message);
