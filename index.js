@@ -766,7 +766,7 @@ app.get('/admin/push-subscription', authenticateToken, async (req, res) => {
 });
 
 // Set username (once, after login)
-app.post('/api/set-username', authenticateToken, async (req, res) => {
+app.post('/api/user/set-username', authenticateToken, async (req, res) => {
   const { username } = req.body;
   const trimmed = (username || '').trim().toLowerCase();
 
