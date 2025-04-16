@@ -391,8 +391,6 @@ app.post('/api/goal', authenticateToken, async (req, res) => {
   }
 });
 
-const moment = require('moment-timezone');
-
 app.post('/api/streak/update', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
