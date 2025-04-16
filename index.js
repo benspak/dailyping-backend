@@ -984,7 +984,7 @@ app.post('/api/ai/suggest-subtasks', async (req, res) => {
       (existing.length > 0
         ? `Current subtasks: ${existing.join(", ")}\n`
         : `There are no current subtasks.\n`) +
-      `Suggest 3 helpful, creative new subtasks to support this goal, avoiding duplication. Each subtask should be independent and actionable. Actionable sub tasks take less than 30 minutes to complete. Return ONLY a JSON array of strings.`;
+      `Suggest 3 helpful, creative new subtasks to support this goal, avoiding duplication. Each subtask should be independent and actionable. Actionable sub tasks take less than 10 minutes to complete. Return ONLY a JSON array of strings.`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -995,7 +995,7 @@ app.post('/api/ai/suggest-subtasks', async (req, res) => {
           content: 'You are a helpful productivity assistant for ADHD users. If they enter a short goal and some sub tasks, your directive is to be creative and come up with related suggestions for sub tasks to help the user achieve the goal.'
         }
       ],
-      max_tokens: 55,
+      max_tokens: 25,
     });
 
     const message = completion.choices[0].message.content;
