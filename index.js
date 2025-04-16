@@ -994,7 +994,7 @@ app.post('/api/ai/suggest-subtasks', async (req, res) => {
           content: 'You are a helpful productivity assistant for ADHD users. If they enter a short goal and some sub tasks, your directive is to be creative and come up with related suggestions for sub tasks to help the user achieve the goal.'
         }
       ],
-      max_tokens: 65,
+      max_tokens: 55,
     });
 
     const message = completion.choices[0].message.content;
@@ -1018,6 +1018,7 @@ app.post('/api/ai/suggest-subtasks', async (req, res) => {
 
 
 // OpenAI Suggest Note
+{/*
 app.post('/api/ai/suggest-note', authenticateToken, async (req, res) => {
   const { goal, subtasks } = req.body;
 
@@ -1046,6 +1047,7 @@ Make the note actionable and motivating, tailored for someone with ADHD. Keep th
     res.status(500).json({ error: 'Failed to generate note' });
   }
 });
+*/}
 
 // GET /api/stats/today
 app.get('/api/stats/today', async (req, res) => {
