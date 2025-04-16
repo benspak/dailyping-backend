@@ -1047,4 +1047,25 @@ Make the note actionable and motivating, tailored for someone with ADHD. Keep th
   }
 });
 
+// GET /api/stats/today
+app.get('/api/stats/today', async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const goalsCompleted = await Goal.countDocuments({
+      goalCompleted: true,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    res.json({ goalsCompleted });
+  } catch (err) {
+    console.error('Error getting today stats:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
