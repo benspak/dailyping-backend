@@ -787,7 +787,7 @@ app.post('/api/user/set-username', authenticateToken, async (req, res) => {
     user.username = trimmed;
     await user.save();
 
-    res.json({ message: '✅ Username set successfully.' });
+    res.json({"success": true, message: "✅ Username set successfully." });
   } catch (err) {
     console.error('❌ Failed to set username:', err.message);
     res.status(500).json({ error: 'Failed to set username' });
