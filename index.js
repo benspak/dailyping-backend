@@ -13,6 +13,7 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const webpush = require('web-push');
 const OpenAI = require("openai");
+const moment = require('moment-timezone');
 
 const app = express();
 const port = process.env.PORT || 5555;
@@ -1050,15 +1051,18 @@ Make the note actionable and motivating, tailored for someone with ADHD. Keep th
 */}
 
 // GET /api/stats/today
-app.get('/api/stats/today', async (req, res) => {
+app.get('/api/stats/today', authenticateToken, async (req, res) => {
   try {
-    const startOfDay = new Date();
-    startOfDay.setUTCHours(0, 0, 0, 0);
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const endOfDay = new Date();
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    const userTimezone = user.timezone || 'America/New_York';
+
+    const startOfDay = moment().tz(userTimezone).startOf('day').toDate();
+    const endOfDay = moment().tz(userTimezone).endOf('day').toDate();
 
     const goalsCompleted = await Goal.countDocuments({
+      userId: user._id,
       goalCompleted: true,
       date: { $gte: startOfDay, $lte: endOfDay }
     });
